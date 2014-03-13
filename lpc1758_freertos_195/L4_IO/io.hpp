@@ -22,12 +22,11 @@
  *  @ingroup BoardIO
  *
  *  Version: 06192012    Initial
+ *  Version: 03122014    Added uart3 Trent S.
  */
  
 #ifndef IO_SHORTCUTS_HPP_
 #define IO_SHORTCUTS_HPP_
-
-
 
 #include "acceleration_sensor.hpp"
 #include "IR_sensor.hpp"
