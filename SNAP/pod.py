@@ -34,11 +34,10 @@ PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
 def startupEvent():     #Status: Done, Tested
     """System startup code, invoked automatically 
     (do not call this manually)"""
-    initUart(DS_UART0, 9600)# set baudrate
+    initUart(DS_UART0,9600, 8, 'N',1)# set baudrate
     stdinMode(0, False)
-    flowControl(1, False) # <= set flow control to True or False as needed
+    flowControl(1, False, True) # <= set flow control to True or False as needed
     crossConnect(DS_UART1, DS_STDIO)#connect uart1 to STDIO
-
 @setHook(HOOK_STDIN)
 def stdinEvent(buf):    #Status: Done, not tested
     """Receive handler for character input from SJONE to SNAP.
@@ -47,14 +46,10 @@ def stdinEvent(buf):    #Status: Done, not tested
  
     n = len(buf)
     
-    global cmd
-    global addr
-    global data
+    global cmd, addr, data
+    global cTime, cLoca, cStat, cSped
     
-    global cTime
-    global cLoca
-    global cStat
-    global cSped
+    setData(buf)
     
     if n == 1:      # mcastRPC command
         cmd = buf[0]
@@ -83,15 +78,13 @@ def hook_1s():          #Status: Done, not tested
     with other nodes so they can find 
     you.
     """
+    printData();
     pass
-@setHook(HOOK_10MS)
+#@setHook(HOOK_10MS)
 def COM():              #Status: IP
     """Every 10ms handle RPC messages
     """
-    global lTime
-    global lLoca
-    global lSped
-    global lStat
+    global lTime, lLoca, lSped, lStat
     global cmd
     global addr
     global data
@@ -108,23 +101,20 @@ def COM():              #Status: IP
         mcastRpc(1,2,help)
     elif cmd ==255: #local       0xFF
         pass
-@setHook(HOOK_100MS)
+#@setHook(HOOK_100MS)
 def locUpdate():        #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
-    global lTime
-    global lLoca
-    global lSped
-    global lStat
-    global cTime
-    global cLoca
-    global cSped
-    global cStat
+    global lTime, lLoca, lSped, lStat
+    global cTime, cLoca, cSped, cStat
     
     if lTime != cTime: #if the last update is the same as current don't change anything
         lTime = cTime
         lLoca = cLoca
         lSped = cSped
         lStat = cStat
-
-    
+def setData(stuff):
+    global data
+    data = stuff[:]
+def printData():
+    print data  #prints global data value
