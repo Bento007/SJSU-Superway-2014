@@ -3,6 +3,9 @@
  *
  *  Created on: Mar 12, 2014
  *      Author: Bento007
+ *
+ *      This is is the brains of the pod, and the core of it's
+ *      functionality
  */
 
 #ifndef STATEMACHINE_HPP_
@@ -11,6 +14,33 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+
+/* To communicate with wireless network!
+ *
+ * #include "uart3.hpp"
+ *
+ * grab an instance of uart 3. //TODO: create a semifore to control UART3 between tasks
+ *  Uart3& snap = Uart3::getInstance();
+ *
+ * READ:
+ *  snap.gets(char* ,int NumberToRead ,int timeToWait);
+ * Example:
+ *  char str[16];   //where the incoming str is read into.
+ *  snap.gets(str ,16 ,100); //read 16 characters from SNAP
+ *
+ * WRITE:
+ *  snap.putChar(char, int timeToWait); //TODO: make compatible with char*
+ * NOTE! Only one character can be put into the queue per putChar()
+ * NOTE! SNAP will not receive the string unless you end the message with '\n'
+ * Example:
+ *  snap.putChar('H', 100);
+ *  snap.putChar('E', 100);
+ *  snap.putChar('L', 100);
+ *  snap.putChar('L', 100);
+ *  snap.putChar('O', 100);
+ *  snap.putChar('\n', 100);// terminating character
+ *
+ */
 
 enum PRT_States{
     startup=1,  // initializes everything
