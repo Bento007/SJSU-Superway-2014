@@ -1,3 +1,5 @@
+/lpc1758_freertos_195/_build
+/Line_Follower/_build
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
@@ -38,6 +40,7 @@ $RECYCLE.BIN/
 *.exe
 *.out
 *.app
+
 # Object files
 *.o
 *.ko
