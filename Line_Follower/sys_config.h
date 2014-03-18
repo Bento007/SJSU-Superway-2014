@@ -98,6 +98,7 @@ unsigned int sys_get_cpu_clock();
 #define FALLBACK_CPU_CLOCK  (24 * 1000 * 1000UL)    ///< Do not change.  This is the fall-back CPU speed if DESIRED_CPU_CLOCK cannot be attained
 
 #define TIMER0_US_PER_TICK  (10)                    ///< Microseconds per tick for Timer0 that is used by FreeRTOS run-time stats
+#define TIMER0_MS_PER_TICK 	(10000)					// EP:
 
 /**
  * Watchdog timeout in milliseconds
