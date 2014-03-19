@@ -3,6 +3,9 @@
     this is a helper file for pod.py. It contains the global
     values, and RPC functions.
 """
+NET_ID = "\x01\x90"
+NET_GROUP_ALL = "\xFF\xFF"
+
 cmd = 0                      # Tracks the current command
 addr= 0                      # Current address tallking too 
 data = 0                    # Tracks the data returned from a RPC
@@ -13,59 +16,129 @@ data = 0                    # Tracks the data returned from a RPC
 lTime = 0 #last time
 lSped = 0 #last speed
 lLoca = 0 #last location
+lTick = 0 #last ticks till merge
 lStat = 0 #last status
 
-cTime = 0 #current Time
-cSped = 0 #current speed
-cLoca = 0 #current location
-cStat = 0 #current status
-cDest = 0 #current Destination
+yields =0 #how many times the pods has yielded in a row. used in for merge priority
+ 
+#cTime = 0 #current Time
+#cSped = 0 #current speed
+#cLoca = 0 #current location
+#cTick = 0 #last ticks till merge
+#cStat = 0 #current status
+#cDest = 0 #current Destination
 
-nDest = 0 #next Destination
+nDest = 0 #next Destination #don't know what to do with it yet.
 
-def getAddr():      #status: Done, tested
-    print localAddr()
+def COM(cmd,data):              #Status: IP
+    """Every 10ms handle RPC messages
+    """
+                    #Desc        CMD    Target Address
+    if cmd == 1:    #get update  0x01 
+        rpc(addr,getLocals,addr, lTime, lSped, lLoca, lStat)
+    elif cmd == 2:  #stop        0x02    addr
+        rpc(addr, stopRPC)
+    elif cmd == 3:  #slow        0x03    addr    
+        rpc(addr, slowRPC)
+    elif cmd == 4:  #speed       0x04    addr 
+        pass
+    elif cmd == 10: #help        0x10    multicasted
+        help()
+    elif cmd ==255: #local       0xFF
+        pass
+    
+"""GETTER FUNCTIONS"""
 def getCMD():       #status: Done, not tested
     """Used for testing CMD"""
-    global cmd
     print cmd
+def getData():
+    print data  #prints global data value
 def getDest(): #status: Done, not tested
-    global cDest
+    """prints the current destination"""
     print cDest
-def getUpdate(addr, time, speed, loca, stat): #status: Done, not tested
-    """Returns the current stats of the Local to Caller through RPC
-    """
-    print "new,",addr,",",time,",",speed,",",loca,",",stat
-    pass
-def hello():        #status: incomplete
-    """Every second broad cast hello
-    share your address and basic info
-    with other nodes so they can find 
-    you.
-    """
-    pass
-def help():         #status: incomplete
-    pass
-def manualUp(time,sped, loca, stat): #status: Done, not tested
-    global cTime
-    global cSped
-    global cLoca
-    global cStat
+def getLocals(addr, time, speed, loca, stat): #status: Done, not tested
+    """Returns the current stats of the Local to Caller through RPC"""
+    print "new",addr,",",lTime,",",lSped,",",lLoca,",",lStat
+
+"""EMERGENCY FUNCTIONS"""
+def help(): #status Done, not tested
+    '''A pod call this if it is having an emergency.'''
+    mcastRpc(NET_GROUP_ALL, 5, helpRPC, localAddr(), lLoca, lStat)
     
-    cTime = time
-    cSped = sped
-    cLoca = loca
-    cStat = stat
-def putChar(char):  #status: Done, tested
-    print char
+"""EMERGENCY RESOLUTION FUNCITONS"""
+def clear(loc): #Status: Done, not tested
+    '''called by the master once the pod issueing a help is handled.'''
+    mcastRpc(NET_GROUP_ALL, 10, clear, loc)
+    print "unblock", loc #sends an unblocks signal to MPU a location blocked by a help CMD.
+
+"""RPC FUNCTIONS"""
+def merge():    #Status: WIP 
+    """ This determines the merge order"""
+    pass
+def mergeRPC(): #Status: WIP
+    """This will be called remotely to 
+        determine merge order
+    """
+    pass
+def helpRPC(addr, loc, stats):         #status: Done, not tested
+    '''The address, and location of a pod with an emergency is rebroadcasted till it 
+        reaches master and is handled. The location of emergency is avoided by the 
+        pod.'''
+    #mcastRpc(NWG_ALL, 10, helpReap, loc, stats)
+    print "block: ", loc #send location to MPU to prevent pod from routing that way.
+def stopRPC():
+    """tells a pod to stop ASAP"""
+    print "stop"
+def slowRPC():#add parameters
+    """tells a pod to slow down a time or speed"""
+    print "slow"
+def yieldRPC():
+    """tells the pod to yield to sender"""
+    print "yield"
+"""SETTER FUNCTIONS"""
 def setCMD(x):      #status: Done, not tested
     """Used for testing CMD"""
     global cmd
     cmd = x
+
 def setDest(destIn): #status: Done, not tested
     global cDest
-    cDest =  destIn
-def slow():         #status: incomplete
-    print "slow"
-def stop():         #status: incomplete
-    print "stop"
+    cDest = destIn
+def setNetGroup(addr): #status: Done, not tested
+    """use to change the networks group
+    """
+    saveNvParam(5,addr) #determine addr?
+    saveNvParam(6,addr) #determine addr?
+    reboot()
+def setLocals(cTime, cLoca, cTick, cStat, cSped): #Status: WIP, not tested
+    """Updates the local values from pod to share
+        with other pods."""
+    global lTime, lLoca, lSped, lStat, lTick
+    #global cTime, cLoca, cSped, cStat, cTick
+    
+    if lTime != cTime: #if the last update is the same as current don't change anything
+        lTime = cTime
+        lSped = cSped
+        lStat = cStat
+        lTick = cTick
+        if lLoca != cLoca:
+            #change networks forwarding and processing and reboot
+            saveNvParam(5,addr) #determine addr?
+            reboot()   
+
+"""MISC FUNCTION FOR DEBUGGING"""
+def putChar(char):  #status: Done, tested
+    print char
+def manualUp(time,sped, loca, stat): #status: Done, not tested
+
+    global cTime, cSped, cLoca, cTick, cStat
+
+    cTime = time
+    cSped = sped
+    cLoca = loca
+    cStat = stat
+def hello():        #status: incomplete
+    """Every second broad cast hello share your address and basic info
+        with other nodes so they can find you.
+    """
+    pass
