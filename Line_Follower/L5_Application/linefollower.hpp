@@ -87,14 +87,20 @@ void init(){
 
 void left()
 {
-	u0_dbg_printf("\nFunction 1\n");
+	timer2 = sys_get_high_res_timer_us();
+	delta = timer2 - timer1;
+//	printf("delta = %i  ; left speed = %f\n", delta, (notchDistance/delta));
+	printf("\n%f", (notchDistance/delta));
+
+	timer1 = sys_get_high_res_timer_us();
 
 }
 void right()
 {
 	timer2 = sys_get_high_res_timer_us();
 	delta = timer2 - timer1;
-	printf("%i  speed = %f\n", delta, (notchDistance/delta));
+	//printf("delta = %i  ; right speed = %f\n", delta, (notchDistance/delta));
+	printf("\n%f", (notchDistance/delta));
 	timer1 = sys_get_high_res_timer_us();
 }
 
@@ -116,8 +122,8 @@ int run(void)
 	int rightspeed = 7;
 	////////////* end interrupt stuff *//
 
-		eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
-		eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
+	eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
+	eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
 
     while(1){
 		leftmotor.set(go);

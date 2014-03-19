@@ -26,24 +26,22 @@ void callback(void (*ptr)()){ // callback function
 
 void EINT3_IRQHandler(void)
 {
-
 	if(LPC_GPIOINT->IntStatus & (1<<2))
 	{
-		LPC_GPIOINT->IO2IntClr = ( 0x3FFF << 0 );
-		if ( LPC_GPIO2 -> FIOPIN & ( 1 << leftspeed))
-			callback(leftptr);
-		else if ( LPC_GPIO2 -> FIOPIN & ( 1 << rightspeed))
+		LPC_GPIOINT->IO2IntClr = ( 0x3FFF << 0 );		// clear all interrupts
+//		if ( LPC_GPIO2 -> FIOPIN & ( 1 << leftspeed))
+//			callback(leftptr);
+		 if ( LPC_GPIO2 -> FIOPIN & ( 1 << rightspeed))
 			callback(rightptr);
 	}
-
 }
 
 void eint3_enable_port0(uint8_t pin_num, eint_intr_t type, void_func_t func)
 {
 	if ( pin_num == leftspeed)                                                    // used global variable to assign the value
-		leftspeed = func;
+		leftptr = func;
 	else if( pin_num == rightspeed)
-		rightspeed = func;
+		rightptr = func;
 
 	//ptr0 = func; // point function pointer to function passed in
 	//LPC_PINCON -> PINSEL0 &= ~( 1 << pin_num);
@@ -63,9 +61,12 @@ void eint3_enable_port0(uint8_t pin_num, eint_intr_t type, void_func_t func)
 void eint3_enable_port2(uint8_t pin_num, eint_intr_t type, void_func_t func)
 {
 	if ( pin_num == leftspeed)                                                    // used global variable to assign the value
-		leftspeed = func;
-	else if( pin_num == rightspeed)
-		rightspeed = func;
+	{
+		leftptr = func;
+	}
+	else if( pin_num == rightspeed){
+		rightptr = func;
+	}
 	LPC_GPIO2 -> FIODIR &= ~(1 << pin_num); // set pin as input
 
 	if ( type == eint_rising_edge )

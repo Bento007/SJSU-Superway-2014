@@ -1,5 +1,5 @@
 /*
- *     SocialLedge.com - Copyright (C) 2013
+//// *     SocialLedge.com - Copyright (C) 2013
  *
  *     This file is part of free software framework for embedded processors.
  *     You can use it and/or distribute it as long as this copyright header
