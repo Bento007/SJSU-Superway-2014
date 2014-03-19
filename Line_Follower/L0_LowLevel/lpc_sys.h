@@ -120,7 +120,14 @@ uint64_t sys_get_uptime_ms(void);
  */
 static inline uint64_t sys_get_high_res_timer_us(void)
 {
-    return ((uint64_t)TIMER0_US_PER_TICK * LPC_TIM0->TC);
+	// TIMER0_US_PER_TICK = 10, Microseconds per tick for Timer0
+	// TC = Timer Counter reg, incremented every PR+1 (Prescale Register) cycles
+    //return ((uint64_t)TIMER0_US_PER_TICK * LPC_TIM0->TC);
+
+
+	// TIMER0_MS_PER_TICK = 10000, Miliseconds per tick for Timer0
+	 return (1 * LPC_TIM0->TC);
+
 }
 
 
