@@ -126,7 +126,7 @@ static inline uint64_t sys_get_high_res_timer_us(void)
 
 
 	// TIMER0_MS_PER_TICK = 10000, Miliseconds per tick for Timer0
-	 return (1 * LPC_TIM0->TC);
+	 return (TIMER0_US_PER_TICK * LPC_TIM0->TC);
 
 }
 

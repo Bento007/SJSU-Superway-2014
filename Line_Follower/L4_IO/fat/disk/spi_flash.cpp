@@ -278,7 +278,6 @@ DRESULT flash_read_sectors(unsigned char *pData, int sectorNum, int sectorCount)
     for(int i = 0; i < sectorCount; i++)
     {
         flash_perform_page_io_of_fatfs_sector(flash_read_page, pData, addr);
-        printf("address = %i\n", addr);
         addr  += FLASH_SECTOR_SIZE;
         pData += FLASH_SECTOR_SIZE;
     }
