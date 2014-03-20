@@ -1,22 +1,13 @@
-""" ---------- CapNet Lesson 3-------------------- 
-    All the functionality of the many on-board sensors and actuators
+""" ---------- Dummy pod helper functions-------------------- 
+Author: Trent Smith
+    Date: 3/19/14
     
-    Tap the hat to turn on all LEDs and run the motor for 2 seconds
-    Intercept node output to view print statements about the system.
+ All the functionality of the on-board LEDS
     
-"""    
-from synapse.switchboard import *
-from capnet_hw import *
+""" 
 from capnet_leds import *
-from PodDummy_helpers import *
-#from pod_func import *              #includes all the pods comands.
 
-#global variables
-PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
-NET_ID = "\x01\x90"
-NET_GROUP_ALL = "\xFF\xFF"
-
-# globals   
+# Globals  
 led_toggle = False    # Track the current LED state
 speed_set = 0         # used for limiting virtual speed
           
@@ -56,22 +47,9 @@ path2 =(
 
 dummy_path = 0
 i_path = 0
-# ---------- SNAP Hook Handlers ------------------------
 
-@setHook(HOOK_STARTUP)
-def start():
-    crossConnect(DS_STDIO, DS_TRANSPARENT)
-    ucastSerial(PORTAL_ADDRESS)
-    setRate(3)
-    init_hw_io()
-    led_en(True)
-    enable_leds()
-    setPath(1)      #change value to one or two  to choose a path
-
-
-@setHook(HOOK_1S)
-def tick1s():
-    """Event Handler: One second tick"""
+#------------  Path Functions  ----------------
+def go():
     global speed_set, ticks
     speed_set = speed_set+1
     if speed_set >=2: # pod advances in position every 3 seconds
@@ -79,10 +57,6 @@ def tick1s():
         ticks=ticks-1
         pathing()
         printGlobals()
-@setHook(HOOK_100MS)
-def tick100ms():
-    """Event Handler: 100 millisecond tick"""
-    pass
 def setPath(select):
     global dummy_path
     if select == 1: #set to path 1
@@ -126,3 +100,60 @@ def printGlobals():
     print "data: ",data
     print "ticks: ",ticks
     print "i_path: ",i_path
+# ----------  Helper functions ----------------
+
+    
+def fixed_pt_str(val, n):
+    """Return str(val) with fixed decimal pt at position n"""
+    # (432,3) => 0.432   (3210,3) => 3.210  (23,1) => 2.3
+    s = str(val)
+    i = len(s)
+    pfx = "0.0000000"
+    return pfx[:n+2-i] + s if i <= n else s[:-n] + '.' + s[-n:]       
+
+# ----------  LED Helper functions ----------------
+    
+# LED pattern: Columns are LEDs, rows comprise sequence
+led_p1 = (
+    #   0   1   2   3   4   5   6   7
+    "\x80\x00\x00\x00\x00\x00\x00\x00",
+    "\x00\x80\x00\x00\x00\x00\x00\x00",
+    "\x00\x00\x80\x00\x00\x00\x00\x00",
+    "\x00\x00\x00\x80\x00\x00\x00\x00",
+    "\x00\x00\x00\x00\x80\x00\x00\x00",
+    "\x00\x00\x00\x00\x00\x80\x00\x00",
+    "\x00\x00\x00\x00\x00\x00\x80\x00",
+    "\x00\x00\x00\x00\x00\x00\x00\x80",
+    "\x00\x00\x00\x00\x00\x00\x00\x00",
+)
+
+led_blink = (
+    #   0   1   2   3   4   5   6   7
+    "\x80\x80\x80\x80\x80\x80\x80\x80",
+    "\x00\x00\x00\x00\x00\x00\x00\x00",
+    "\x00\x00\x00\x00\x00\x00\x00\x00",
+    "\x00\x00\x00\x00\x00\x00\x00\x00",
+)
+
+led_pattern = led_p1
+i_ledpat = 0
+    
+def set_led_pat(pattern, repeat):
+    global led_pattern, led_repeat, i_ledpat
+    
+    led_pattern = pattern
+    led_repeat = repeat
+    i_ledpat = 0
+    
+def run_led_pattern():
+    global i_ledpat, led_pattern
+    
+    if not led_pattern:
+        return
+    
+    pat = led_pattern[i_ledpat]
+    set_leds_bulk(pat)
+
+    i_ledpat = i_ledpat + 1
+    if i_ledpat == len(led_pattern):
+        i_ledpat = 0

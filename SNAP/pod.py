@@ -1,5 +1,6 @@
 """
-    Author: Trent Smith  Date: 2/17/2014
+    Author: Trent Smith  
+    Date: 3/19/2014
     The following code is used to control the communication
     between other pods on the Spartan Supeway PRT system.
     This code is to be uploaded to the RF266PC1 device
@@ -72,7 +73,7 @@ def hook_1s():          #Status: Done, not tested
     pass
 #@setHook(HOOK_10MS)
 def hook_10ms
-    
+    pass
 #@setHook(HOOK_100MS)
 def hook_100MS():
     pass
