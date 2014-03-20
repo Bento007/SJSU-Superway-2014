@@ -16,7 +16,7 @@ data = 0                    # Tracks the data returned from a RPC
 lTime = 0 #last time
 lSped = 0 #last speed
 lLoca = 0 #last location
-lTick = 0 #last ticks till merge
+lTick = 0 #last ticks till merge. Tick needs a time stamp connected to it.
 lStat = 0 #last status
 
 yields =0 #how many times the pods has yielded in a row. used in for merge priority
@@ -24,10 +24,10 @@ yields =0 #how many times the pods has yielded in a row. used in for merge prior
 #cTime = 0 #current Time
 #cSped = 0 #current speed
 #cLoca = 0 #current location
-#cTick = 0 #last ticks till merge
+#cTick = 0 #current ticks till merge
 #cStat = 0 #current status
-#cDest = 0 #current Destination
 
+cDest = 0 #current Destination
 nDest = 0 #next Destination #don't know what to do with it yet.
 
 def COM(cmd,data):              #Status: IP
@@ -43,37 +43,29 @@ def COM(cmd,data):              #Status: IP
     elif cmd == 4:  #speed       0x04    addr 
         pass
     elif cmd == 10: #help        0x10    multicasted
-        help()
+        emergency()
     elif cmd ==255: #local       0xFF
-        pass
-    
-"""GETTER FUNCTIONS"""
-def getCMD():       #status: Done, not tested
-    """Used for testing CMD"""
-    print cmd
-def getData():
-    print data  #prints global data value
-def getDest(): #status: Done, not tested
-    """prints the current destination"""
-    print cDest
-def getLocals(addr, time, speed, loca, stat): #status: Done, not tested
-    """Returns the current stats of the Local to Caller through RPC"""
-    print "new",addr,",",lTime,",",lSped,",",lLoca,",",lStat
+        pass    
 
+"""V----------RPC FUNCTIONS----------V"""
 """EMERGENCY FUNCTIONS"""
-def help(): #status Done, not tested
+def emergency(): #status Done, not tested
     '''A pod call this if it is having an emergency.'''
     mcastRpc(NET_GROUP_ALL, 5, helpRPC, localAddr(), lLoca, lStat)
     
 """EMERGENCY RESOLUTION FUNCITONS"""
-def clear(loc): #Status: Done, not tested
+def emergencyResolved(loc): #Status: Done, not tested
     '''called by the master once the pod issueing a help is handled.'''
-    mcastRpc(NET_GROUP_ALL, 10, clear, loc)
+    mcastRpc(NET_GROUP_ALL, 5, emergencyResolvedRPC, loc)
+def emergencyResolvedRPC(loc):
     print "unblock", loc #sends an unblocks signal to MPU a location blocked by a help CMD.
-
-"""RPC FUNCTIONS"""
 def merge():    #Status: WIP 
     """ This determines the merge order"""
+    """
+        if lLoca == merge type
+            
+            
+    """
     pass
 def mergeRPC(): #Status: WIP
     """This will be called remotely to 
@@ -95,7 +87,34 @@ def slowRPC():#add parameters
 def yieldRPC():
     """tells the pod to yield to sender"""
     print "yield"
-"""SETTER FUNCTIONS"""
+
+"""V----------MISC FUNCTION----------V"""
+"""GETTER FUNCTIONS ( use for sending to MPU )"""
+def getCMD():       #status: Done, not tested
+    """Used for testing CMD"""
+    print cmd
+def getData():
+    print data  #prints global data value
+def getDest(): #status: Done, not tested
+    """prints the current destination"""
+    print cDest
+def getGlobals():
+    """Prints out all of the globals values"""
+    print "\ncmd: " , cmd
+    print "\naddr: ", addr
+    print "\ndata: ", data
+    print "\nlTime: ", lTime
+    print "\nlSped: ", lSped
+    print "\nlLoca: ", lLoca
+    print "\nlTick: ", lTick
+    print "\nlStat: ", lStat
+    print "cDest: ", cDest
+    print "nDest: ", nDest
+    print "yields: ", yields
+def getLocals(addr, time, speed, loca, stat): #status: Done, not tested
+    """Returns the current stats of the Local to Caller through RPC"""
+    print "new",addr,",",lTime,",",lSped,",",lLoca,",",lStat
+"""SETTER FUNCTIONS(for manually setting values from Portal)"""
 def setCMD(x):      #status: Done, not tested
     """Used for testing CMD"""
     global cmd
@@ -123,10 +142,10 @@ def setLocals(cTime, cLoca, cTick, cStat, cSped): #Status: WIP, not tested
         lTick = cTick
         if lLoca != cLoca:
             #change networks forwarding and processing and reboot
-            saveNvParam(5,addr) #determine addr?
+            setNetGroup(addr)
             reboot()   
 
-"""MISC FUNCTION FOR DEBUGGING"""
+"""FUNCTIONS FOR DEBUGGING AND TESTING"""
 def putChar(char):  #status: Done, tested
     print char
 def manualUp(time,sped, loca, stat): #status: Done, not tested
