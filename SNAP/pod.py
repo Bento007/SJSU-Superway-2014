@@ -72,7 +72,7 @@ def hook_1s():          #Status: Done, not tested
     """
     pass
 #@setHook(HOOK_10MS)
-def hook_10ms
+def hook_10ms():
     pass
 #@setHook(HOOK_100MS)
 def hook_100MS():

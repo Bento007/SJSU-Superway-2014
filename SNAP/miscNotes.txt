@@ -1,0 +1,16 @@
+ID 3 – Network ID 
+	must be the same for pods to talk
+	0xFFFF is a wildcard value to which all nodes respond
+ID 4 – Channel
+	must be the same for pods to talk
+ID 5 – Multi-cast Processed Groups
+	16-bits, will process information received from here from an mcastRpc
+ID 6 – Multi-cast Forwarded Groups
+	will forward messages received here.
+	
+what kind of data needs to be sent from pod to pod. How long to wait,
+
+virtual track for dummy pods
+
+dummy 1 path = S1-> M1R-> F2-> M2L-> F3-> M3L-> F4-> M4L-> F1-> M1L
+dummy 2 path = S2-> M3R-> F4-> M4R-> F1-> M1L-> F2-> M2R-> F3-> M3L
