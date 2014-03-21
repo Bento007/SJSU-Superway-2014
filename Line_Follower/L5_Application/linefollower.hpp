@@ -52,7 +52,11 @@
 
 int timer1;
 int timer2;
-int delta;
+int timer3;
+int timer4;
+
+int deltaleft;
+int deltaright;
 float notchDistance = 12;	// 12mm
 int speed;
 void timers();
@@ -88,20 +92,20 @@ void init(){
 void left()
 {
 	timer2 = sys_get_high_res_timer_us();
-	delta = timer2 - timer1;
-//	printf("delta = %i  ; left speed = %f\n", delta, (notchDistance/delta));
-	printf("\n%f", (notchDistance/delta));
+	deltaleft = timer2 - timer1;
+	printf("deltaleft = %i  \n", deltaleft);
+//	printf("%f", (notchDistance/delta));
 
 	timer1 = sys_get_high_res_timer_us();
 
 }
 void right()
 {
-	timer2 = sys_get_high_res_timer_us();
-	delta = timer2 - timer1;
-	//printf("delta = %i  ; right speed = %f\n", delta, (notchDistance/delta));
-	printf("\n%f", (notchDistance/delta));
-	timer1 = sys_get_high_res_timer_us();
+	timer3 = sys_get_high_res_timer_us();
+	deltaright = timer3 - timer4;
+	printf("     deltaright = %i  \n", deltaright);
+//	printf("\n%f", (notchDistance/delta));
+	timer4 = sys_get_high_res_timer_us();
 }
 
 
