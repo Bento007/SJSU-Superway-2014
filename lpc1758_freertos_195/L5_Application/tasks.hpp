@@ -28,7 +28,8 @@
 #include "command_handler.hpp"
 #include "wireless.h"
 #include "char_dev.hpp"
-
+#include "eint.h"
+#include "lpc_pwm.hpp"
 
 
 /**
@@ -118,7 +119,5 @@ class wirelessTask : public scheduler_task
             return true;
         }
 };
-
-
 
 #endif /* TASKS_HPP_ */

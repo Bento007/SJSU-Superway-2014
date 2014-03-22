@@ -14,6 +14,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include "tasks.hpp"
 #define QDelay 100
 
 /* To communicate with wireless network!
@@ -44,15 +45,24 @@
  */
 
 enum PRT_States{
-    startup =1,    // initializes everything
-    ready   =2,    // waiting for direction
-    error   =3,    // error detected or initialize failed
-    roam    =4,    // no directions received driving around track
-    pickup  =5,    // directions received going to pick up location
-    load    =6,    // at stations loading
-    dropoff =7,    // in route to drop off
-    unload  =8     // at destination and unloading passengers
+    startup =1,     // initializes everything
+    ready   =2,     // waiting for direction
+    error   =3,     // error detected or initialize failed
+    roam    =4,     // no directions received driving around track
+    pickup  =5,     // directions received going to pick up location
+    load    =6,     // at stations loading
+    dropoff =7,     // in route to drop off
+    unload  =8      // at destination and unloading passengers
 };
+
+enum Directives{    //Commands to be sent to line follower
+    forward =1,     //Continue going straight
+    turn    =2,     //Break from straight line, make the turn off
+    yield   =3,     //Slow the pod down
+    stop    =0,     //Make a full stop
+    //wait    =5      //Hold position
+};
+
 
 struct S{   //station
         int bays;   // number of bays pods can load/load at.
@@ -87,17 +97,19 @@ typedef struct node{
         char type;                  // S=station, M = merge, F = fork, D= depot.
         char name[4];               // identifies the nodes specific name.
         union nodeInfo info ;       //points to the info about the node
-};
+}trackSection;
 
 
 void StateMachine()
 {
     /*initialize variables here*/
-    Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
+    //Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
     PRT_States current= startup, next;
     //TODO initialize variable/buffer to store messages in.
-    //TODO
+    //TODO initialize directives queue to be shared
+    //between line follower and State machine
 
+    int command = 0;
     //TODO initialize memory, if any is used
     //QueueHandle_t directions;
     //node map[x][y];
@@ -105,6 +117,11 @@ void StateMachine()
     /*begin state machine*/
     while(1)
     {
+
+        //To send from SM to line follower just do the following.
+//        if(!xQueueSend(directives, &command, 100))
+//            puts("Failed!\n");
+
         switch(current)
         {
             case startup:
@@ -116,23 +133,23 @@ void StateMachine()
                  */
 
                 //Send a char, to check comm works
-                snap.putChar('H', QDelay);
-                snap.putChar('\n', QDelay);
+                //snap.putChar('H', QDelay);
+                //snap.putChar('\n', QDelay);
                 char *b;
 
                 //TODO add initialization function to line follower
                 //-----have it return a value through queue handles to use here.
 
-                if(snap.gets(b, 1, QDelay)){
+                //if(snap.gets(b, 1, QDelay)){
                 //for now checks UART3 then moves on
                 //add more conditions later.
                     next = ready;
-                }
+                //}
 
-                else{
-                //At least one check has failed
-                    next =  error;
-                }
+//                else{
+//                //At least one check has failed
+//                    next =  error;
+//                }
 
                 break;
 
@@ -178,7 +195,7 @@ void StateMachine()
 
             case load:
                 //Waiting mode:
-                //to simulate a load sequence, wait a few seconds.
+
 
                 //TODO:am i loaded?
                 //if so
