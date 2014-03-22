@@ -25,14 +25,14 @@
  * @note  printf of %f may be turned off to save memory, this can be configured at sys_config.h
  */
 #include "tasks.hpp"
-<<<<<<< HEAD
+
 #include "examples/examples.hpp"
-=======
+
 #include "StateMachine.hpp"
 #include "eint.h"
 #include "lpc_pwm.hpp"
 #include "lineFollower.hpp"
->>>>>>> refs/heads/master
+
 
 QueueHandle_t directives=0;     //shared queue, for sending commands from
                                 //the state machine to the line follower task
@@ -97,7 +97,7 @@ int main(void)
     //Forward (straight), Left (turn), Yield, Stop, and (maybe) wait.
     directives = xQueueCreate(2, sizeof(int));  //Will transmit commands from State machine to line follower.
 
-<<<<<<< HEAD
+
     /**
      * A few basic tasks for this bare-bone system :
      *      1.  Terminal task provides gateway to interact with the board through UART terminal.
@@ -160,13 +160,11 @@ int main(void)
     #endif
 
     scheduler_start(true); ///< This shouldn't return
-=======
     //Create the tasks that will be running.
     xTaskCreate(lineFollower, (const char*)"Line Follower", STACK_BYTES(1024), 0, 1, 0);
     xTaskCreate(stateMachine, (const char*)"State Machine", STACK_BYTES(1024), 0, 2, 0);
 
     vTaskStartScheduler();  //schedule the tasks, should never return/exit.
 
->>>>>>> refs/heads/master
     return -1;
 }
