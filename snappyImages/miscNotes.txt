@@ -10,6 +10,8 @@ ID 6 – Multi-cast Forwarded Groups
 	
 what kind of data needs to be sent from pod to pod. How long to wait,
 
+getLq(1) #returns the link quality from 0-255, 255 is best
+
 virtual track for dummy pods
 
 dummy 1 path = S1-> M1R-> F2-> M2L-> F3-> M3L-> F4-> M4L-> F1-> M1L
