@@ -25,27 +25,79 @@
  * @note  printf of %f may be turned off to save memory, this can be configured at sys_config.h
  */
 #include "tasks.hpp"
+<<<<<<< HEAD
 #include "examples/examples.hpp"
+=======
+#include "StateMachine.hpp"
+#include "eint.h"
+#include "lpc_pwm.hpp"
+#include "lineFollower.hpp"
+>>>>>>> refs/heads/master
 
+QueueHandle_t directives=0;     //shared queue, for sending commands from
+                                //the state machine to the line follower task
 
+void lineFollower(void *p)
+{
+    //TODO call initialization function
 
-/**
- * The main() creates tasks or "threads".  See the documentation of scheduler_task class at cpp_task.hpp
- * for details.  There is a very simple example towards the beginning of this class's declaration.
- *
- * @warning SPI #1 bus usage notes (interfaced to SD & Flash):
- *      - You can read/write files from multiple tasks because it automatically goes through SPI semaphore.
- *      - If you are going to use the SPI Bus in a FreeRTOS task, you need to use the API at L4_IO/fat/spi_sem.h
- *
- * @warning SPI #0 usage notes (Nordic wireless)
- *      - This bus is more tricky to use because if FreeRTOS is not running, the RIT interrupt may use the bus.
- *      - If FreeRTOS is running, then wireless task may use it.
- *        In either case, you should avoid using this bus or interfacing to external components because
- *        there is no semaphore configured for this bus and it should be used exclusively by nordic wireless.
- */
+    initLineFollower(); //initialize the line follower
+
+    while(1){
+        //TODO call the line follower run() function or place code here.
+        //All operations code should be in here.
+        //Task will never end/exit, and it shouldn't.
+
+        leftmotor.set(go);
+        rightmotor.set(go);
+
+        //      if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
+
+        //      if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
+        //          leftmotor.set(go);
+        //          rightmotor.set(go);
+        //          printf("go straight");
+        //      }
+        //      else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
+        //          leftmotor.set(stop);
+        //          rightmotor.set(stop);
+        //          printf("motor stop\n");
+        //      }
+        //      else if(!(LPC_GPIO1->FIOPIN & (1 << left))){        // if left sensor hits line
+        //          leftmotor.set(stop);
+        //          rightmotor.set(go);
+        //          printf("go right\n");
+        //      }
+        //      else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
+        //          leftmotor.set(go);
+        //          rightmotor.set(stop);
+        //          printf("go left\n");
+        //      }
+
+    }
+}
+
+void stateMachine(void *p)
+{
+    //TODO do/call initializations here
+
+    while(1){
+        //TODO call the state machine function OR migrate code to here
+        //All state machine operations code should be here.
+        //Task should never end/exit.
+        //This task must have highest priority, unless a "safety" task is made.
+    }
+
+}
+
 int main(void)
 {
+    //TODO what queues will be shared? Add them here first.
+    //Would need to pass directives in from the state machine such as:
+    //Forward (straight), Left (turn), Yield, Stop, and (maybe) wait.
+    directives = xQueueCreate(2, sizeof(int));  //Will transmit commands from State machine to line follower.
 
+<<<<<<< HEAD
     /**
      * A few basic tasks for this bare-bone system :
      *      1.  Terminal task provides gateway to interact with the board through UART terminal.
@@ -108,5 +160,13 @@ int main(void)
     #endif
 
     scheduler_start(true); ///< This shouldn't return
+=======
+    //Create the tasks that will be running.
+    xTaskCreate(lineFollower, (const char*)"Line Follower", STACK_BYTES(1024), 0, 1, 0);
+    xTaskCreate(stateMachine, (const char*)"State Machine", STACK_BYTES(1024), 0, 2, 0);
+
+    vTaskStartScheduler();  //schedule the tasks, should never return/exit.
+
+>>>>>>> refs/heads/master
     return -1;
 }
