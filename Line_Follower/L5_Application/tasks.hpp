@@ -28,8 +28,19 @@
 #include "command_handler.hpp"
 #include "wireless.h"
 #include "char_dev.hpp"
-#include "../L2_Drivers/lpc_pwm.hpp"
-
+#include "lpc_pwm.hpp"
+#include "eint.h"
+#include "tasks.hpp"
+#include "examples/examples.hpp"
+#include "utilities.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <sys_config.h>
+#include "io.hpp"
+#include "lpc_sys.h"
+#include "soft_timer.hpp"
+#include <printf_lib.h>
+#include "LED_Display.hpp"
 
 
 /**
@@ -68,118 +79,81 @@ class terminalTask : public scheduler_task
         bool saveDiskTlm(void);
 };
 
-/**
- * Remote task is the task the monitors the IR remote control signals.
- * It can "learn" remote control codes by typing "learn" into the UART0 terminal.
- * Thereafter, if a user enters a 2-digit number through a remote control, then
- * your function handleUserEntry() is called where you can take an action.
- */
-class remoteTask : public scheduler_task
+class sensorMotorTask : public scheduler_task, PWM
 {
-    public:
-        remoteTask(uint8_t priority);   ///< Constructor
-        bool init(void);                ///< Inits the task
-        bool regTlm(void);              ///< Registers non-volatile variables
-        bool taskEntry(void);           ///< One time entry function
-        bool run(void *p);              ///< The main loop
+public:
+	int leftspeed=6;
+	int rightspeed=7;
+	int lleft = 20;
+	int left = 22;
+	int middle = 23;
+	int right = 28;
+	int rright = 29;
 
-    private:
-        /** This function is called when a 2-digit number is decoded */
-        void handleUserEntry(int num);
-        
-        /**
-         * @param code  The IR code
-         * @param num   The matched number 0-9 that mapped the IR code.
-         * @returns true if the code has been successfully mapped to the num
-         */
-        bool getNumberFromCode(uint32_t code, uint32_t& num);
+    int go = 50;		/// PWM cannot go above 100
+    int stop = 0;
+	void (*leftptr)();
+	void (*rightptr)();
 
-        uint32_t mNumCodes[10];     ///< IR Number codes
-        uint32_t mIrNumber;         ///< Current IR number we're decoding
-        xSemaphoreHandle mLearnSem; ///< Semaphore to enable IR code learning
-        SoftTimer mIrNumTimer;      ///< Time-out for user entry for 1st and 2nd digit
+    PWM leftmotor(PWM::pwm1, 50);		// pwm1 = P2.0 = left 		/////////// ERROR HERE ////////////////
+    PWM rightmotor(PWM::pwm2, 50);		// pwm2 = P2.1 = right		//////////// ERROR HERE /////////////////
+
+	bool init(void)
+	{
+		LPC_SC->PCLKSEL0 &= ~(3<<12);
+		LPC_SC->PCLKSEL0 |= (1<<13);					// set CLK/1
+		LPC_GPIO2->FIODIR &= ~(1<<leftspeed);			// speed input pin 2.6
+		LPC_GPIO2->FIODIR &= ~(1<<rightspeed);			// speed input pin 2.7
+
+		// sensor pins as input
+		LPC_GPIO1->FIODIR &= ~(1 << lleft);				// lleft sensor input
+		LPC_GPIO1->FIODIR &= ~(1 << left);				// left sensor input
+		LPC_GPIO1->FIODIR &= ~(1 << middle);			// middle sensor input
+		LPC_GPIO1->FIODIR &= ~(1 << right);				// right sensor input
+		LPC_GPIO1->FIODIR &= ~(1 << rright);			// rright sensor input
+
+		LPC_GPIO0->FIODIR |= (1<<0);					// output to LCD
+
+		leftptr = left;
+		rightptr = right;
+
+		eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
+		eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
+
+		// add shared object of queue/semaphore
+	}
+
+	bool run(void *p)
+	{
+		leftmotor.set(go);
+		rightmotor.set(go);
+
+		//    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
+
+		//    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
+		//        	leftmotor.set(go);
+		//        	rightmotor.set(go);
+		//    		printf("go straight");
+		//    	}
+		//		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
+		//	    	leftmotor.set(stop);
+		//	    	rightmotor.set(stop);
+		//			printf("motor stop\n");
+		//		}
+		//    	else if(!(LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
+		//        	leftmotor.set(stop);
+		//        	rightmotor.set(go);
+		//			printf("go right\n");
+		//		}
+		//		else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
+		//	    	leftmotor.set(go);
+		//	    	rightmotor.set(stop);
+		//			printf("go left\n");
+		//		}
+
+
+		return -1;
+	}
 };
-
-/**
- * Nordic wireless task to participate in the mesh network and handle retry logic
- * such that packets are resent if an ACK has not been received
- */
-class wirelessTask : public scheduler_task
-{
-    public:
-        wirelessTask(uint8_t priority) :
-            scheduler_task("wireless", 512, priority)
-        {
-            /* Nothing to init */
-        }
-
-        bool run(void *p)
-        {
-            wireless_service(); ///< This is a non-polling function if FreeRTOS is running.
-            return true;
-        }
-};
-
-//class sensorMotorTask : public scheduler_task
-//{
-//    public:
-//		bool init (void)
-//        {
-//			LPC_PINCON->PINSEL4 &= ~(0xf);
-//		    LPC_PINCON->PINSEL4 |= (5);						// enable PWM1.1 and PWM1.2
-//		    LPC_SC->PCLKSEL0 &= ~(3<<12);
-//		    LPC_SC->PCLKSEL0 |= (1<<13);					// set CLK/1
-//
-//		    // sensor pins as input
-//		    int lleft = 20;
-//		    int left = 22;
-//		    int middle = 23;
-//		    int right = 28;
-//		    int rright = 29;
-//		    LPC_GPIO1->FIODIR &= (1 << lleft);				  // lleft sensor input
-//		    LPC_GPIO1->FIODIR &= (1 << left);				  // left sensor input
-//		    LPC_GPIO1->FIODIR &= (1 << middle);				  // middle sensor input
-//		    LPC_GPIO1->FIODIR &= (1 << right);				  // right sensor input
-//		    LPC_GPIO1->FIODIR &= (1 << rright);				  // rright sensor input
-//
-//
-//		    PWM leftmotor(PWM::pwm1, 50);		// pwm1 = left
-//		    PWM rightmotor(PWM::pwm2, 50);		// pwm2 = right
-//
-//		    int go = 200;
-//		    int stop = 0;
-//        }
-//
-//        bool run(void *p)
-//        {
-//           	if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
-//                	leftmotor.set(go);
-//                	rightmotor.set(go);
-//            		printf("go straight");
-//            	}
-//        		else if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-//        	    	leftmotor.set(stop);
-//        	    	rightmotor.set(stop);
-//        			printf("motor stop\n");
-//        		}
-//            	else if((LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
-//                	leftmotor.set(stop);
-//                	rightmotor.set(go);
-//        			printf("go right\n");
-//        		}
-//        		else if ((LPC_GPIO1->FIOPIN & (1 << right))){
-//        	    	leftmotor.set(go);
-//        	    	rightmotor.set(stop);
-//        			printf("go left\n");
-//        		}
-//        		else
-//        			printf("no go...\n");
-//
-//        		delay_ms(10);
-//            return true;
-//        }
-//};
-
-
 
 #endif /* TASKS_HPP_ */

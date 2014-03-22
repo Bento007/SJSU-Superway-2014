@@ -19,10 +19,35 @@ void (*rightptr)();
 
 int leftspeed = 6;
 int rightspeed = 7;
+int timer1;
+int timer2;
+int timer3;
+int timer4;
+int deltaleft;
+int deltaright;
 
 void callback(void (*ptr)()){ // callback function
 	ptr();
 }
+void left()
+{
+	timer2 = sys_get_high_res_timer_us();
+	deltaleft = timer2 - timer1;
+	printf("deltaleft = %i  \n", deltaleft);
+//	printf("%f", (notchDistance/delta));
+
+	timer1 = sys_get_high_res_timer_us();
+
+}
+void right()
+{
+	timer3 = sys_get_high_res_timer_us();
+	deltaright = timer3 - timer4;
+	printf("     deltaright = %i  \n", deltaright);
+//	printf("\n%f", (notchDistance/delta));
+	timer4 = sys_get_high_res_timer_us();
+}
+
 
 void EINT3_IRQHandler(void)
 {
@@ -38,7 +63,7 @@ void EINT3_IRQHandler(void)
 
 void eint3_enable_port0(uint8_t pin_num, eint_intr_t type, void_func_t func)
 {
-	if ( pin_num == leftspeed)                                                    // used global variable to assign the value
+	if ( pin_num == leftspeed)        // used global variable to assign the value
 		leftptr = func;
 	else if( pin_num == rightspeed)
 		rightptr = func;
@@ -60,7 +85,7 @@ void eint3_enable_port0(uint8_t pin_num, eint_intr_t type, void_func_t func)
 /// @copydoc eint3_enable_port0()
 void eint3_enable_port2(uint8_t pin_num, eint_intr_t type, void_func_t func)
 {
-	if ( pin_num == leftspeed)                                                    // used global variable to assign the value
+	if ( pin_num == leftspeed)       // used global variable to assign the value
 	{
 		leftptr = func;
 	}

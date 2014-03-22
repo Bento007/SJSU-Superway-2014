@@ -43,8 +43,11 @@
 
 int main(void)
 {
-	run();
-///////
+	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
+	scheduler_add_task(new sensorMotorTask(PRIORITY_MEDIUM));
+
+
+    scheduler_start(true); ///< This shouldn't return
     return -1;
 }
 

@@ -34,6 +34,9 @@
  *
  * @note  printf of %f may be turned off to save memory, this can be configured at sys_config.h
  */
+
+// TODO: adjust PWM to work with speed
+
 #include "tasks.hpp"
 #include "examples/examples.hpp"
 #include "utilities.h"
@@ -63,7 +66,6 @@ void timers();
 void init(){
 	//	LPC_PINCON->PINSEL4 &= ~(0xf);
 	//    LPC_PINCON->PINSEL4 |= (5);						// enable PWM1.1 and PWM1.2
-	///// delete linenneee
 		int speed=6;
 	    LPC_SC->PCLKSEL0 &= ~(3<<12);
 	    LPC_SC->PCLKSEL0 |= (1<<13);					// set CLK/1
@@ -134,7 +136,6 @@ int run(void)
 		rightmotor.set(go);
 
 //    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
-
 
 //    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
 //        	leftmotor.set(go);
