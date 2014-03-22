@@ -14,6 +14,8 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include "tasks.hpp"
+#define QDelay 100
 
 /* To communicate with wireless network!
  *
@@ -43,15 +45,26 @@
  */
 
 enum PRT_States{
-    startup=1,  // initializes everything
-    ready,      // waiting for direction
-    error,      // error detected or initialize failed
-    roam,       // no directions received driving around track
-    pickup,     // directions received going to pick up location
-    load,       // at stations loading
-    dropoff,    // in route to drop off
-    unload      // at destination and unloading passengers
+    startup =1,     // initializes everything
+    ready   =2,     // waiting for direction
+    error   =3,     // error detected or initialize failed
+    roam    =4,     // no directions received driving around track
+    pickup  =5,     // directions received going to pick up location
+    load    =6,     // at stations loading
+    dropoff =7,     // in route to drop off
+    unload  =8      // at destination and unloading passengers
 };
+
+//Directives will be sent to a queue that the line follower will receive and
+//will respond accordingly.
+enum Directives{
+    forward =1,     //Continue going straight
+    turn    =2,     //Break from straight line, make the turn off
+    yield   =3,     //Slow the pod down
+    stop    =0,     //Make a full stop
+    //wait    =5      //Hold position
+};
+
 
 struct S{   //station
         int bays;   // number of bays pods can load/load at.
@@ -83,21 +96,34 @@ union nodeInfo{
 
 /*node structs describes the different sections of the track*/
 typedef struct node{
-        char type;      // S=station, M = merge, F = fork, D= depot.
-        char name[4];   // identifies the nodes specific name.
-        union nodeInfo info ;    //points to the info about the node
-};
+        char type;                  // S=station, M = merge, F = fork, D= depot.
+        char name[4];               // identifies the nodes specific name.
+        union nodeInfo info ;       //points to the info about the node
+}trackSection;
+
 
 void StateMachine()
 {
     /*initialize variables here*/
+    //Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
     PRT_States current= startup, next;
+    //TODO initialize variable/buffer to store messages in.
+    //TODO initialize directives queue to be shared
+    //between line follower and State machine
+
+    int command = 0;
+    //TODO initialize memory, if any is used
     //QueueHandle_t directions;
     //node map[x][y];
 
     /*begin state machine*/
     while(1)
     {
+
+        //To send from SM to line follower just do the following.
+//        if(!xQueueSend(directives, &command, 100))
+//            puts("Failed!\n");
+
         switch(current)
         {
             case startup:
@@ -107,29 +133,109 @@ void StateMachine()
                  * else
                  *  next = error
                  */
+
+                //Send a char, to check comm works
+                //snap.putChar('H', QDelay);
+                //snap.putChar('\n', QDelay);
+                char *b;
+
+                //TODO add initialization function to line follower
+                //-----have it return a value through queue handles to use here.
+
+                //if(snap.gets(b, 1, QDelay)){
+                //for now checks UART3 then moves on
+                //add more conditions later.
+                    next = ready;
+                //}
+
+//                else{
+//                //At least one check has failed
+//                    next =  error;
+//                }
+
                 break;
+
             case ready:
                 /* if(next direction == NULL)
-                 *  nextState
+                 * --nextState
                  * else
-                 *  next
-                 * check if directions queue is empty*/
+                 * --next
+                 * check if directions queue is empty
+                 */
+                //if(direction ==NULL)//no directions for client
+                    next = roam;
+
+                //else //has a direction to get clients
+                    next = pickup;
+
                 break;
-            case error: break;
-            case roam: break;
-            case pickup: break;
-            case load: break;
-            case dropoff: break;
-            case unload: break;
-            case startup: break;
-            case ready: break;
-            default: break;
+
+            case error:
+                //send error status to the snap/computer
+                //save error info
+                //send stop command to pod?
+                    //-use commandQueue
+                break;
+
+            case roam:
+                //Traveling mode
+
+                //if NO directions
+                //--run around for fun
+                //--or head to a depot
+                break;
+
+            case pickup:
+                //Traveling mode
+
+                //have we reached station for pickup?
+                // next = load;
+
+                //else
+                //next = pickup;
+                break;
+
+            case load:
+                //Waiting mode:
+
+
+                //TODO:am i loaded?
+                //if so
+                //next = dropoff
+
+                //else
+                //next = load
+                break;
+
+            case dropoff:
+                //Traveling mode
+
+                //reached correct destination?
+                //go to unload
+
+                //else
+                //next = dropoff
+                break;
+
+            case unload:
+                //Waiting mode
+                //to simulate an unload sequence, wait a few seconds
+                //next = ready
+                break;
+
+//these states are doubles or unneeded
+//            case startup: break;
+//
+//            case ready: break;
+//
+//            default: break;
         }
+
         current = next;// store the next state
     }
 
 }
 
 
-
+#undef QDelay
 #endif /* STATEMACHINE_HPP_ */
