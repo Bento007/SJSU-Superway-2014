@@ -13,6 +13,7 @@
 #include "lpc_pwm.hpp"
 #include "io.hpp"
 
+//globals, can change this to have them in some struct or class.
 
     int leftspeed=6;
     int rightspeed=7;

@@ -55,7 +55,9 @@ enum PRT_States{
     unload  =8      // at destination and unloading passengers
 };
 
-enum Directives{    //Commands to be sent to line follower
+//Directives will be sent to a queue that the line follower will receive and
+//will respond accordingly.
+enum Directives{
     forward =1,     //Continue going straight
     turn    =2,     //Break from straight line, make the turn off
     yield   =3,     //Slow the pod down
