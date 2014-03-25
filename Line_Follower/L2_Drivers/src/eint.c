@@ -29,7 +29,7 @@ int deltaright;
 void callback(void (*ptr)()){ // callback function
 	ptr();
 }
-void left()
+void leftinterrupt()
 {
 	timer2 = sys_get_high_res_timer_us();
 	deltaleft = timer2 - timer1;
@@ -39,7 +39,7 @@ void left()
 	timer1 = sys_get_high_res_timer_us();
 
 }
-void right()
+void rightinterrupt()
 {
 	timer3 = sys_get_high_res_timer_us();
 	deltaright = timer3 - timer4;

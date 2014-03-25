@@ -31,8 +31,9 @@ extern "C" {
 	void eint3_enable_port2(uint8_t pin_num, eint_intr_t type, void_func_t func);
 	void EINT3_IRQHandler(void);
 	void callback(void (*ptr)());
-	//void function0();
-	//void function2();
+	void leftinterrupt();
+	void rightinterrupt();
+
 
 	#ifdef __cplusplus
 }

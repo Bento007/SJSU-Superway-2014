@@ -79,24 +79,20 @@ class terminalTask : public scheduler_task
         bool saveDiskTlm(void);
 };
 
-class sensorMotorTask : public scheduler_task, PWM
+class sensorMotorTask : public scheduler_task, public PWM
 {
 public:
-	int leftspeed=6;
-	int rightspeed=7;
-	int lleft = 20;
-	int left = 22;
-	int middle = 23;
-	int right = 28;
-	int rright = 29;
 
-    int go = 50;		/// PWM cannot go above 100
-    int stop = 0;
 	void (*leftptr)();
 	void (*rightptr)();
+//	PWM *leftMotorPtr;		// testing ignore
+//	PWM *rightMotorPtr;
 
-    PWM leftmotor(PWM::pwm1, 50);		// pwm1 = P2.0 = left 		/////////// ERROR HERE ////////////////
-    PWM rightmotor(PWM::pwm2, 50);		// pwm2 = P2.1 = right		//////////// ERROR HERE /////////////////
+	sensorMotorTask(uint8_t priority) :scheduler_task("lineFollower", 1024*4, priority), PWM(PWM::pwm1, 50),
+			leftptr(leftinterrupt), rightptr(rightinterrupt)
+	{
+	/* Nothing to do */
+	}
 
 	bool init(void)
 	{
@@ -114,46 +110,64 @@ public:
 
 		LPC_GPIO0->FIODIR |= (1<<0);					// output to LCD
 
-		leftptr = left;
-		rightptr = right;
+		PWM leftMotor(PWM::pwm1, 50);		// pwm1 = P2.0 = left
+		PWM rightMotor(PWM::pwm2, 50);		// pwm2 = P2.1 = right
+//		leftMotorPtr = &leftMotor;		// testing ignore
+//		rightMotorPtr = &rightMotor;
 
 		eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
 		eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
 
 		// add shared object of queue/semaphore
+		return true;
 	}
+
 
 	bool run(void *p)
 	{
-		leftmotor.set(go);
-		rightmotor.set(go);
+//		leftMotor.set((float)go);		// todo: not working, come back and fix
+//		rightMotor.set((float)go);
 
-		//    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
 
-		//    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-		//        	leftmotor.set(go);
-		//        	rightmotor.set(go);
-		//    		printf("go straight");
-		//    	}
-		//		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
-		//	    	leftmotor.set(stop);
-		//	    	rightmotor.set(stop);
-		//			printf("motor stop\n");
-		//		}
-		//    	else if(!(LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
-		//        	leftmotor.set(stop);
-		//        	rightmotor.set(go);
-		//			printf("go right\n");
-		//		}
-		//		else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
-		//	    	leftmotor.set(go);
-		//	    	rightmotor.set(stop);
-		//			printf("go left\n");
-		//		}
+		/// FOLLOWING LINE ///
+//    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
+
+//    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
+//        	leftmotor.set(go);
+//        	rightmotor.set(go);
+//    		printf("go straight");
+//    	}
+//		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
+//	    	leftmotor.set(stop);
+//	    	rightmotor.set(stop);
+//			printf("motor stop\n");
+//		}
+//    	else if(!(LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
+//        	leftmotor.set(stop);
+//        	rightmotor.set(go);
+//			printf("go right\n");
+//		}
+//		else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
+//	    	leftmotor.set(go);
+//	    	rightmotor.set(stop);
+//			printf("go left\n");
+//		}
 
 
 		return -1;
 	}
+
+private:
+	int leftspeed=6;
+	int rightspeed=7;
+	int lleft = 20;
+	int left = 22;
+	int middle = 23;
+	int right = 28;
+	int rright = 29;
+
+    int go = 50;		/// PWM cannot go above 100
+    int stop = 0;
 };
 
 #endif /* TASKS_HPP_ */
