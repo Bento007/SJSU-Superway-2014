@@ -13,15 +13,14 @@
 #include "lpc_pwm.hpp"
 #include "io.hpp"
 
-//globals, can change this to have them in some struct or class.
-
-    int leftspeed=6;
-    int rightspeed=7;
-    int lleft = 20;
-    int left = 22;
-    int middle = 23;
-    int right = 28;
-    int rright = 29;
+//save space by #define constants, let the compiler handle it. -Trent S.
+#define leftspeed 6
+#define rightspeed 7
+#define lleft  20
+#define left  22;
+#define middle  23;
+#define right  28;
+#define rright  29;
 
     int go = 50;        /// PWM cannot go above 100
 //    int stop = 0;
