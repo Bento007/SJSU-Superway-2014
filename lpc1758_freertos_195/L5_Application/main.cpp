@@ -41,15 +41,15 @@ void lineFollower(void *p)
 {
     //TODO call initialization function
 
-    initLineFollower(); //initialize the line follower
+//    initLineFollower(); //initialize the line follower
 
     while(1){
         //TODO call the line follower run() function or place code here.
         //All operations code should be in here.
         //Task will never end/exit, and it shouldn't.
-
-        leftmotor.set(go);
-        rightmotor.set(go);
+//
+//        leftmotor.set(go);
+//        rightmotor.set(go);
 
         //      if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
 
