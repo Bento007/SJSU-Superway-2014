@@ -85,11 +85,13 @@ public:
 
 	void (*leftptr)();
 	void (*rightptr)();
-//	PWM *leftMotorPtr;		// testing ignore
-//	PWM *rightMotorPtr;
+	PWM *leftMotorPtr;		// testing ignore
+	PWM *rightMotorPtr;
+    int go = 20;		/// PWM cannot go above 100
+    int stop = 0;
 
 	sensorMotorTask(uint8_t priority) :scheduler_task("lineFollower", 1024*4, priority), PWM(PWM::pwm1, 50),
-			leftptr(leftinterrupt), rightptr(rightinterrupt)
+			leftptr(leftinterrupt), rightptr(rightinterrupt), leftMotorPtr(0), rightMotorPtr(0)
 	{
 	/* Nothing to do */
 	}
@@ -112,22 +114,21 @@ public:
 
 		PWM leftMotor(PWM::pwm1, 50);		// pwm1 = P2.0 = left
 		PWM rightMotor(PWM::pwm2, 50);		// pwm2 = P2.1 = right
-//		leftMotorPtr = &leftMotor;		// testing ignore
-//		rightMotorPtr = &rightMotor;
+		leftMotorPtr = new PWM(leftMotor);		// testing ignore
+		rightMotorPtr = new PWM(rightMotor);
 
 		eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
 		eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
 
-		// add shared object of queue/semaphore
+		// EP: add shared object of queue/semaphore
 		return true;
 	}
 
 
 	bool run(void *p)
 	{
-//		leftMotor.set((float)go);		// todo: not working, come back and fix
-//		rightMotor.set((float)go);
-
+		leftMotorPtr->set((float)go);		// todo: not working, come back and fix
+		rightMotorPtr->set((float)go);
 
 		/// FOLLOWING LINE ///
 //    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
@@ -153,7 +154,7 @@ public:
 //			printf("go left\n");
 //		}
 
-
+		delay_ms(1000);
 		return -1;
 	}
 
@@ -166,8 +167,7 @@ private:
 	int right = 28;
 	int rright = 29;
 
-    int go = 50;		/// PWM cannot go above 100
-    int stop = 0;
+
 };
 
 #endif /* TASKS_HPP_ */

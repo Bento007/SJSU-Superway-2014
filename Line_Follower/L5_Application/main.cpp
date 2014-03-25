@@ -45,7 +45,7 @@ int main(void)
 {
 
 
-	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
+//	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
 	scheduler_add_task(new sensorMotorTask(PRIORITY_MEDIUM));
 
 
