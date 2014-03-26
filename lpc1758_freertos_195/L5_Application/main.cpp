@@ -1,29 +1,5 @@
-/*
- *     SocialLedge.com - Copyright (C) 2013
- *
- *     This file is part of free software framework for embedded processors.
- *     You can use it and/or distribute it as long as this copyright header
- *     remains unmodified.  The code is free for personal use and requires
- *     permission to use in a commercial product.
- *
- *      THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
- *      OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
- *      MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
- *      I SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR
- *      CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
- *
- *     You can reach the author of this software at :
- *          p r e e t . w i k i @ g m a i l . c o m
- */
-
-/**
- * @file
- * @brief This is the application entry point.
- * 			FreeRTOS and stdio printf is pre-configured to use uart0_min.h before main() enters.
- * 			@see L0_LowLevel/lpc_sys.h if you wish to override printf/scanf functions.
- *
- * @note  printf of %f may be turned off to save memory, this can be configured at sys_config.h
- */
+#include <stdio.h>
+#include <stdlib.h>
 #include "tasks.hpp"
 
 #include "examples/examples.hpp"
@@ -39,42 +15,7 @@ QueueHandle_t directives=0;     //shared queue, for sending commands from
 
 void lineFollower(void *p)
 {
-    //TODO call initialization function
 
-//    initLineFollower(); //initialize the line follower
-
-    while(1){
-        //TODO call the line follower run() function or place code here.
-        //All operations code should be in here.
-        //Task will never end/exit, and it shouldn't.
-//
-//        leftmotor.set(go);
-//        rightmotor.set(go);
-
-        //      if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
-
-        //      if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-        //          leftmotor.set(go);
-        //          rightmotor.set(go);
-        //          printf("go straight");
-        //      }
-        //      else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
-        //          leftmotor.set(stop);
-        //          rightmotor.set(stop);
-        //          printf("motor stop\n");
-        //      }
-        //      else if(!(LPC_GPIO1->FIOPIN & (1 << left))){        // if left sensor hits line
-        //          leftmotor.set(stop);
-        //          rightmotor.set(go);
-        //          printf("go right\n");
-        //      }
-        //      else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
-        //          leftmotor.set(go);
-        //          rightmotor.set(stop);
-        //          printf("go left\n");
-        //      }
-
-    }
 }
 
 void stateMachine(void *p)
@@ -90,81 +31,183 @@ void stateMachine(void *p)
 
 }
 
-int main(void)
+/*
+ * dijkstra.h
+ *
+ *  Created on: Mar 14, 2014
+ *      Author: Marjo
+ *
+ *      Dijkstras is used to find the shortest path
+ *      through a track. It uses a 2-d array to
+ *      connect nodes.
+ *      TESTING TESTING 123
+ *
+ */
+
+
+/*Used http://www.geeksforgeeks.org/greedy-algorithms-set-6-dijkstras-shortest-path-algorithm/ graph for reference
+the website's 0 = this code's 999 (infinity value)*/
+
+#define MAX 4 // vertices+1
+#define INF 999
+#define vertices 3
+
+struct gNode
 {
-    //TODO what queues will be shared? Add them here first.
-    //Would need to pass directives in from the state machine such as:
-    //Forward (straight), Left (turn), Yield, Stop, and (maybe) wait.
-    directives = xQueueCreate(2, sizeof(int));  //Will transmit commands from State machine to line follower.
+    int value;
+    bool station;
+    bool merge;
+    bool fork;
+};
+struct dijkstra
+{
+    gNode edgeWeight[MAX][MAX];
+    int     curPosition[MAX],
+        nWeight[MAX],
+        visited[MAX];
+};
 
 
-    /**
-     * A few basic tasks for this bare-bone system :
-     *      1.  Terminal task provides gateway to interact with the board through UART terminal.
-     *
-     * Disable remote task if you are not using it.  Also, it needs ENABLE_TELEMETRY
-     * such that it can save remote control codes to non-volatile memory.  IR remote
-     * control codes can be learned by typing "learn" command.
-     */
-    scheduler_add_task(new terminalTask(PRIORITY_HIGH));
-
-    /* Your tasks should probably used PRIORITY_MEDIUM or PRIORITY_LOW because you
-     * want the terminal task to always be responsive so you can poke around in
-     * case something goes wrong.
-     */
+    void initialize(int);
+    void makeGraph(struct dijkstra*);
+    void dijkstraFunc(struct dijkstra*, int);
+    void print(struct dijkstra*, int, int);
+    //int vertices = 3; //TODO: NO GLOBALS MARJO!
 
 
-    /**
-     * Change "#if 0" to "#if 1" to enable examples.
-     * Try these examples one at a time.
-     */
-    #if 0
-        scheduler_add_task(new example_task());
-        scheduler_add_task(new example_alarm());
-        scheduler_add_task(new example_logger_qset());
-        scheduler_add_task(new example_nv_vars());
-    #endif
+int main()
+{
 
-    /**
-	 * Try the rx / tx tasks together to see how they queue data to each other.
-	 */
-    #if 0
-        scheduler_add_task(new queue_tx());
-        scheduler_add_task(new queue_rx());
-    #endif
+    int mainSrc, destination;
+    dijkstra *mainGraph = new dijkstra;
+    makeGraph(mainGraph);
+    //mainGraph.makeGraph();
+    printf("\nSource Vertex: ");
+    scanf("%i", &mainSrc);
 
-    /**
-     * Another example of shared handles and producer/consumer using a queue.
-     * In this example, producer will produce as fast as the consumer can consume.
-     */
-    #if 0
-        scheduler_add_task(new producer());
-        scheduler_add_task(new consumer());
-    #endif
+    printf("\nDestination: ");
+    scanf("%i", &destination);
 
-    /**
-     * If you have RN-XV on your board, you can connect to Wifi using this task.
-     * This does two things for us:
-     *   1.  The task allows us to perform HTTP web requests (@see wifiTask)
-     *   2.  Terminal task can accept commands from TCP/IP through Wifly module.
-     *
-     * To add terminal command channel, add this at terminal.cpp :: taskEntry() function:
-     * @code
-     *     // Assuming Wifly is on Uart3
-     *     addCommandChannel(Uart3::getInstance(), false);
-     * @endcode
-     */
-    #if 0
-        Uart3::getInstance().init(WIFI_BAUD_RATE, WIFI_RXQ_SIZE, WIFI_TXQ_SIZE);
-        scheduler_add_task(new wifiTask(Uart3::getInstance(), PRIORITY_LOW));
-    #endif
+    dijkstraFunc(mainGraph, mainSrc);
+    print(mainGraph, mainSrc, destination);
+    //mainGraph.dijkstraFunc(mainSrc);
+    //mainGraph.print(mainSrc);
+        scanf("%i", &mainSrc);
 
-    scheduler_start(true); ///< This shouldn't return
-    //Create the tasks that will be running.
-    xTaskCreate(lineFollower, (const char*)"Line Follower", STACK_BYTES(1024), 0, 1, 0);
-    xTaskCreate(stateMachine, (const char*)"State Machine", STACK_BYTES(1024), 0, 2, 0);
+        return -1;
+}
 
-    vTaskStartScheduler();  //schedule the tasks, should never return/exit.
+void makeGraph(struct dijkstra* graph)
+{
 
-    return -1;
+            int i, j;
+            for (i = 1; i <= vertices; i++)
+                {
+                    for (j = 1; j <= vertices; j++)
+                    {
+                        graph->edgeWeight[i][j].value=999;
+                    }
+                }
+            graph->edgeWeight[1][2].value=2;
+            graph->edgeWeight[2][3].value=1;
+            graph->edgeWeight[3][1].value=3;
+
+            /*PUT
+            if edgeWeight = [i][j] SET NODE TYPE HERE, have the structs
+            does this need to be in main after makeGraph(mainGraph);
+            essentially, hardcoding the pointers in the main after the graph is generated
+            */
+
+                printf(  "\nWeight matrix:\n" );
+                /*Weight matrix graph needs to account for DIRECTED, not bi-directional weights
+                i.e. the points should not reflect back B->C is one path but B<-C is not*/
+                for (i = 1; i <= vertices; i++)
+                {
+                    for (j = 1; j <= vertices; j++)
+                    {
+                    printf("%i", graph->edgeWeight[i][j]);
+                    printf("\t");
+                    }
+
+                    printf("\n");
+            }
+
+}
+void initialize(struct dijkstra* graph, int src)
+{
+    /*src node = 0*/
+    for (int i = 1; i <= vertices; i++)
+    {
+        graph->nWeight[i] = graph->edgeWeight[src][i].value;
+        graph->visited[i] = 0;
+        graph->curPosition[i] = src;
+    }
+    graph->visited[src] = 1;
+
+}
+
+/*
+Traverses through each vertex and does the "Relaxation" function
+*/
+
+void dijkstraFunc(struct dijkstra* graph, int src)
+{
+    int min, u;
+    initialize(graph, src);
+    for (int i = 1; i <= vertices; i++)
+    {
+        min = INF;
+        u = 0;
+        for (int j = 1; j <= vertices; j++)
+        {
+            if (!graph->visited[j] && graph->nWeight[j] < min)
+            {
+                // new min value
+                min = graph->nWeight[j];
+                u = j;
+            }
+        }
+
+        graph->visited[u] = 1;
+
+        for (int v = 1; v <= vertices; v++)
+            if (!graph->visited[v] && (graph->nWeight[u] + graph->edgeWeight[u][v].value < graph->nWeight[v]))
+            {
+                // assigns new value into vertex
+                graph->nWeight[v] = graph->nWeight[u] + graph->edgeWeight[u][v].value;
+                graph->curPosition[v] = u;
+            }
+    }
+}
+
+void print(struct dijkstra* graph, int src, int dest)
+{
+    int i, k;
+    printf("\nShortest Path from vertex %i", src);
+    printf(": \n\n");
+    for (i = 1; i <= vertices; i++)
+    {
+        if (i == src)
+        continue;
+
+        else if (i == dest)
+        {
+        printf("to vertex %i", i);
+        printf(" is: ");
+        k = i;
+        printf("%i", k);
+        printf(" << ");
+        while (graph->curPosition[k] != src)
+        {
+            printf("%i", graph->curPosition[k]);
+            printf(" << ");
+            k = graph->curPosition[k];
+        }
+
+        //print travel weight
+        printf("%i", src);
+        printf("\n Weight : %i", graph->nWeight[i]);
+        printf("\n\n");
+        }
+    }
 }
