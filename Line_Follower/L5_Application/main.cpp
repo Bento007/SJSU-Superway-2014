@@ -30,8 +30,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys_config.h>
-#include "../L4_IO/fat/disk/spi_flash.h"
-#include "../L2_Drivers/base/i2c_base.hpp"
 #include "../L2_Drivers/lpc_pwm.hpp"
 #include "io.hpp"
 #include "lpc_sys.h"
@@ -43,11 +41,8 @@
 
 int main(void)
 {
-
-
 //	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
 	scheduler_add_task(new sensorMotorTask(PRIORITY_MEDIUM));
-
 
     scheduler_start(true); ///< This shouldn't return
     return -1;

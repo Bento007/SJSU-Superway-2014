@@ -85,13 +85,13 @@ public:
 
 	void (*leftptr)();
 	void (*rightptr)();
-	PWM *leftMotorPtr;		// testing ignore
-	PWM *rightMotorPtr;
-    int go = 20;		/// PWM cannot go above 100
+	PWM leftMotor, rightMotor;
+    int go = 50;		/// PWM cannot go above 100
     int stop = 0;
 
-	sensorMotorTask(uint8_t priority) :scheduler_task("lineFollower", 1024*4, priority), PWM(PWM::pwm1, 50),
-			leftptr(leftinterrupt), rightptr(rightinterrupt), leftMotorPtr(0), rightMotorPtr(0)
+	sensorMotorTask(uint8_t priority) :scheduler_task("lineFollower", 1024, priority), PWM(PWM::pwm1, 50),
+			leftptr(leftinterrupt), rightptr(rightinterrupt),
+			leftMotor(PWM::pwm1, 50), rightMotor(PWM::pwm2, 50)
 	{
 	/* Nothing to do */
 	}
@@ -114,8 +114,8 @@ public:
 
 		PWM leftMotor(PWM::pwm1, 50);		// pwm1 = P2.0 = left
 		PWM rightMotor(PWM::pwm2, 50);		// pwm2 = P2.1 = right
-		leftMotorPtr = new PWM(leftMotor);		// testing ignore
-		rightMotorPtr = new PWM(rightMotor);
+		leftptr=leftinterrupt;
+		rightptr=rightinterrupt;
 
 		eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
 		eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
@@ -127,38 +127,34 @@ public:
 
 	bool run(void *p)
 	{
-		leftMotorPtr->set((float)go);		// todo: not working, come back and fix
-		rightMotorPtr->set((float)go);
 
 		/// FOLLOWING LINE ///
-//    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
+    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
+    		leftMotor.set((float)go);
+    		rightMotor.set((float)go);
+    		printf("go straight");
+    	}
+		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
+			leftMotor.set((float)stop);
+			rightMotor.set((float)stop);
+			printf("motor stop\n");
+		}
+    	else if((LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
+    		leftMotor.set((float)stop);
+    		rightMotor.set((float)go);
+			printf("go right\n");
+		}
+		else if ((LPC_GPIO1->FIOPIN & (1 << right))){
+			leftMotor.set((float)go);
+			rightMotor.set((float)stop);
+			printf("go left\n");
+		}
 
-//    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-//        	leftmotor.set(go);
-//        	rightmotor.set(go);
-//    		printf("go straight");
-//    	}
-//		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
-//	    	leftmotor.set(stop);
-//	    	rightmotor.set(stop);
-//			printf("motor stop\n");
-//		}
-//    	else if(!(LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
-//        	leftmotor.set(stop);
-//        	rightmotor.set(go);
-//			printf("go right\n");
-//		}
-//		else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
-//	    	leftmotor.set(go);
-//	    	rightmotor.set(stop);
-//			printf("go left\n");
-//		}
-
-		delay_ms(1000);
 		return -1;
 	}
 
 private:
+	// pin layout //
 	int leftspeed=6;
 	int rightspeed=7;
 	int lleft = 20;
