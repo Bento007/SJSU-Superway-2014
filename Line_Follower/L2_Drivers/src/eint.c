@@ -56,7 +56,7 @@ void EINT3_IRQHandler(void)
 		LPC_GPIOINT->IO2IntClr = ( 0x3FFF << 0 );		// clear all interrupts
 		if ( LPC_GPIO2 -> FIOPIN & ( 1 << leftspeed))
 			callback(leftptr);
-		 if ( LPC_GPIO2 -> FIOPIN & ( 1 << rightspeed))
+		if ( LPC_GPIO2 -> FIOPIN & ( 1 << rightspeed))
 			callback(rightptr);
 	}
 }
