@@ -31,26 +31,27 @@ void callback(void (*ptr)()){ // callback function
 }
 void leftinterrupt()
 {
+	printf("////// inside left interrupt ////////\n");
 	timer2 = sys_get_high_res_timer_us();
 	deltaleft = timer2 - timer1;
 	printf("deltaleft = %i  \n", deltaleft);
-//	printf("%f", (notchDistance/delta));
 
 	timer1 = sys_get_high_res_timer_us();
-
 }
 void rightinterrupt()
 {
+	printf("////// inside right interrupt ////////\n");
 	timer3 = sys_get_high_res_timer_us();
 	deltaright = timer3 - timer4;
 	printf("     deltaright = %i  \n", deltaright);
-//	printf("\n%f", (notchDistance/delta));
 	timer4 = sys_get_high_res_timer_us();
+
 }
 
 
 void EINT3_IRQHandler(void)
 {
+
 	if(LPC_GPIOINT->IntStatus & (1<<2))
 	{
 		LPC_GPIOINT->IO2IntClr = ( 0x3FFF << 0 );		// clear all interrupts
@@ -102,5 +103,5 @@ void eint3_enable_port2(uint8_t pin_num, eint_intr_t type, void_func_t func)
 	{
 		LPC_GPIOINT->IO2IntEnF |= ( 1 << pin_num);
 	}
-	NVIC_EnableIRQ(EINT3_IRQn);
+	NVIC_EnableIRQ(EINT3_IRQn);		// todo: crashing here
 }

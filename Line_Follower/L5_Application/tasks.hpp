@@ -86,12 +86,12 @@ public:
 	void (*leftptr)();
 	void (*rightptr)();
 	PWM leftMotor, rightMotor;
-    int go = 50;		/// PWM cannot go above 100
+    int go = 30;		/// PWM cannot go above 100
     int stop = 0;
 
 	sensorMotorTask(uint8_t priority) :scheduler_task("lineFollower", 1024, priority), PWM(PWM::pwm1, 50),
 			leftptr(leftinterrupt), rightptr(rightinterrupt),
-			leftMotor(PWM::pwm1, 50), rightMotor(PWM::pwm2, 50)
+			leftMotor(PWM::pwm1, 0), rightMotor(PWM::pwm2, 0)
 	{
 	/* Nothing to do */
 	}
@@ -112,13 +112,16 @@ public:
 
 		LPC_GPIO0->FIODIR |= (1<<0);					// output to LCD
 
-		PWM leftMotor(PWM::pwm1, 50);		// pwm1 = P2.0 = left
-		PWM rightMotor(PWM::pwm2, 50);		// pwm2 = P2.1 = right
 		leftptr=leftinterrupt;
 		rightptr=rightinterrupt;
 
-		eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
-		eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
+		leftMotor.set(stop);
+		rightMotor.set(stop);
+
+		eint3_enable_port2( leftspeed, eint_rising_edge , leftptr);	// crashing here
+		eint3_enable_port2( rightspeed, eint_rising_edge , rightptr);
+
+		LE.setAll(0xF);
 
 		// EP: add shared object of queue/semaphore
 		return true;
@@ -127,27 +130,26 @@ public:
 
 	bool run(void *p)
 	{
-
 		/// FOLLOWING LINE ///
     	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-    		leftMotor.set((float)go);
-    		rightMotor.set((float)go);
-    		printf("go straight");
+    		leftMotor.set(go);
+    		rightMotor.set(go);
+    		//printf("go straight");
     	}
 		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
-			leftMotor.set((float)stop);
-			rightMotor.set((float)stop);
-			printf("motor stop\n");
+			leftMotor.set(stop);
+			rightMotor.set(stop);
+			//printf("motor stop\n");
 		}
     	else if((LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
-    		leftMotor.set((float)stop);
-    		rightMotor.set((float)go);
-			printf("go right\n");
+    		leftMotor.set(stop);
+    		rightMotor.set(go);
+			//printf("go right\n");
 		}
 		else if ((LPC_GPIO1->FIOPIN & (1 << right))){
-			leftMotor.set((float)go);
-			rightMotor.set((float)stop);
-			printf("go left\n");
+			leftMotor.set(go);
+			rightMotor.set(stop);
+			//printf("go left\n");
 		}
 
 		return -1;
