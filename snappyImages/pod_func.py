@@ -2,6 +2,7 @@
     Date: 3/19/14
     this is a helper file for pod.py. It contains the global
     values, and RPC functions.
+    Distance between ticks should be uniform.
 """
 #**********Globals**********************************************
 #-----Network addresses and groups
@@ -9,8 +10,8 @@ NET_ID = "\x01\x90"
 NET_GROUP_ALL = "\xFF\xFF"
 
 #-----Last command and parameters
-cmd = 0                      # Tracks the current command
-addr= 0                      # Current address tallking too 
+cmd = 0                     # Tracks the current command
+addr= 0                     # Current address tallking too 
 data = 0                    # Tracks the data returned from a RPC
 
 """ These values are updated from the pod to send to neighbors
@@ -33,6 +34,8 @@ yields =0 #how many times the pods has yielded in a row. used in for merge prior
 cDest = 0 #current Destination
 nDest = 0 #next Destination #don't know what to do with it yet.
 
+ETM = 0   #Estimated time till merge in seconds. Used in merging
+
 def COM(cmd,data):              #Status: WIP
     """Every 10ms handle RPC messages
     """
@@ -43,8 +46,10 @@ def COM(cmd,data):              #Status: WIP
         rpc(addr, stopRPC)
     elif cmd == 3:  #slow        0x03    addr    
         rpc(addr, slowRPC)
-    elif cmd == 4:  #speed       0x04    addr 
+    elif cmd == 4:  #speed       0x04    addr
         pass
+    elif cmd == 5:  #merge       0x05
+        merge()
     elif cmd == 10: #help        0x10    multicasted
         emergency()
     elif cmd ==255: #local       0xFF
@@ -68,30 +73,55 @@ def emergencyRPC(addr, loc, stats): #status: Done, not tested
     print "block: ", loc #send location to MPU to prevent pod from routing that way.
 def merge():    #Status: WIP 
     """ This determines the merge order"""
-    """
-        if lLoca == merge type
-            
-            
-    """
-    pass
-def mergeRPC(): #Status: WIP
+    mcastRpc(NET_ID, 1, mergeRPC, ETM, lLoca)
+def mergeRPC(remoteETM,remoteLoca): #Status: WIP
     """This will be called remotely to 
         determine merge order
     """
-    pass
+    global ETM
+    
+    if lLoca != remoteLoca: #if you will be merging
+        return
+    else:
+        temp = ETM - remoteETM #do you need to worry?
+        if temp > 4  or temp < -4 : # no worries
+            return
+        elif ( ETM < remoteETM ): #you're in front of sender you determine order
+            temp = 4 + ETM #temp should be a negative number
+            rpc( rpcSourceAddr, slowRPC, temp ) #tell other pod to slow
+        elif( ETM == remoteETM ):   #whomever is to the right goes first
+            action = rpc( rpcSourceAddr, yieldRPC, yields ) #tell other pod to slow
+            if not action: #yield fails
+                ETM = remoteETM + 4
+            
 def stopRPC(time):  #Status: WIP
     """tells a pod to stop ASAP"""
     print "stop"
-def slowRPC(time):  #Status: WIP add parameters
+def slow(newETM):  #Status: Done, not tested
     """tells a pod to slow down a time or speed"""
-    print "slow"
+    global ETM
+    ETM = newETM
+    print "slow", ETM #tell pod to slow
+def slowRPC(newETM):  #Status: Done, not tested
+    """tells a pod to slow down a time or speed"""
+    global ETM
+    ETM = ETM + newETM
+    print "slow", ETM
 def updateRPC(loc,weight):  #status: Done, not tested
     """Updates the track on the MPUs memory"""
-    print "loc:",node,",weight:",weight
-def yieldRPC(): #Status: WIP
-    """tells the pod to yield to sender"""
-    print "yield"
-
+    print "loc:",loc,",weight:",weight
+def yieldRPC(remoteYields): #Status: WIP
+    """asks the pod to yield to sender
+        if true the pods yields
+        else the pods tells the other to yield
+    """
+    global yields, ETM
+    if remoteYields > yields:
+        yields = yields + 1 #increase the number of times yielded
+        ETM = ETM + 4
+        return 1
+    else:
+        return 0
 #**********MISC FUNCTION*******************************
 #-----GETTER FUNCTIONS ( use for sending to MPU )
 def getCMD():   #status: Done, Tested
@@ -136,7 +166,7 @@ def setNetGroup(addr):  #status: Done, not tested
 def setLocals(cTime, cLoca, cTick, cStat, cSped): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
-    global lTime, lLoca, lSped, lStat, lTick
+    global lTime, lLoca, lSped, lStat, lTick, yields
     #global cTime, cLoca, cSped, cStat, cTick
     
     if lTime != cTime: #if the last update is the same as current don't change anything
@@ -146,6 +176,7 @@ def setLocals(cTime, cLoca, cTick, cStat, cSped): #Status: Done, not tested
         lTick = cTick
         if lLoca != cLoca:
             #change networks forwarding and processing and reboot
+            yields = 0
             setNetGroup(addr)
             reboot()   
 
