@@ -40,19 +40,24 @@ def COM(cmd,data):              #Status: WIP
     """Every 10ms handle RPC messages
     """
                     #Desc        CMD    Target Address
-    if cmd == 1:    #get update  0x01 
-        rpc(addr,getLocals,addr, lTime, lSped, lLoca, lStat)
-    elif cmd == 2:  #stop        0x02    addr
-        rpc(addr, stopRPC)
-    elif cmd == 3:  #slow        0x03    addr    
-        rpc(addr, slowRPC)
-    elif cmd == 4:  #speed       0x04    addr
-        pass
-    elif cmd == 5:  #merge       0x05
+    if cmd == 'U':    #get update  U
+        parseLocal(data)
+    if cmd == 'T':
+          setETM(data)
+#         rpc(addr,getLocals,addr, lTime, lSped, lLoca, lStat)
+#     elif cmd == 2:  #stop        0x02    addr
+#         rpc(addr, stopRPC)
+#     elif cmd == 3:  #slow        0x03    addr    
+#         rpc(addr, slowRPC)
+#     elif cmd == 4:  #speed       0x04    addr
+#         pass
+    elif cmd == 'M':  #merge       M
+        setETM(data)
         merge()
-    elif cmd == 10: #help        0x10    multicasted
+    elif cmd == 'E':  #help        E    multicasted
+        setStatus(data)
         emergency()
-    elif cmd ==255: #local       0xFF
+    elif cmd ==255:   #local       0xFF
         pass
         
 #-----EMERGENCY FUNCTIONS
@@ -153,32 +158,39 @@ def setCMD(x):  #status: Done, Tested
     """Used for testing CMD"""
     global cmd
     cmd = x
-
 def setDest(destIn):    #status: Done, Tested
     global cDest
     cDest = destIn
+def setETM(x):
+    global ETM
+    ETM = x
 def setNetGroup(addr):  #status: Done, not tested
     """use to change the networks group
     """
     saveNvParam(5,addr) #determine addr?
     saveNvParam(6,addr) #determine addr?
     reboot()
-def setLocals(cTime, cLoca, cTick, cStat, cSped): #Status: Done, not tested
+def setTicks(ticks):
+    global lTicks
+    lTicks = ticks;
+def setStatus(x):
+    global lStat
+    lStat = x
+def setLocals(cTime, cLoca, cStat, cSped): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
-    global lTime, lLoca, lSped, lStat, lTick, yields
+    global lTime, lLoca, lSped, lStat, yields
     #global cTime, cLoca, cSped, cStat, cTick
     
     if lTime != cTime: #if the last update is the same as current don't change anything
         lTime = cTime
         lSped = cSped
         lStat = cStat
-        lTick = cTick
         if lLoca != cLoca:
             #change networks forwarding and processing and reboot
             yields = 0
-            setNetGroup(addr)
-            reboot()   
+#             setNetGroup(addr)
+#             reboot()   
 
 #-----FUNCTIONS FOR DEBUGGING AND TESTING
 def putChar(char):  #status: Done, tested
@@ -196,3 +208,23 @@ def hello():    #status: WIP
         with other nodes so they can find you.
     """
     pass
+def parseLocal(input):
+    n = len(input)
+    param = 0
+    i = 0
+    j = 0
+    while(i < n):
+        c = buf[i]
+        i += 1
+        if c == ',':
+            if param ==0:
+                cTime = input[j:i-1]
+            elif param ==1:
+                cLoca = input[j:i-1]
+            elif param ==2:
+                cStat = input[j:i-1]
+            elif param ==3:
+                cSped = input[j:i-1]
+            j=i
+            param +=1
+    setLocals(cTime, cLoca,cStat, cSped)       
