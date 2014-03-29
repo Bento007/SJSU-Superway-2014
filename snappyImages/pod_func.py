@@ -214,7 +214,7 @@ def parseLocal(input):
     i = 0
     j = 0
     while(i < n):
-        c = buf[i]
+        c = input[i]
         i += 1
         if c == ',':
             if param ==0:
