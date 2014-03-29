@@ -206,6 +206,9 @@ void makeGraph(struct dijkstra* graph)
 
 }
 
+/*
+- Flags all nodes as unvisited
+*/
 void initialize(struct dijkstra* graph, int src)
 {
     /*src node = 0*/
@@ -219,6 +222,10 @@ void initialize(struct dijkstra* graph, int src)
 
 }
 
+/*
+- Performs Dijkstra algorithm
+- Iterates through all nodes that are connected to src node
+*/
 void dijkstraFunc(struct dijkstra* graph, int src)
 {
     int min, u;
@@ -249,82 +256,78 @@ void dijkstraFunc(struct dijkstra* graph, int src)
     }
 }
 
+/*
+- Creates an int stack of node labels used for the Dijkstra algorithm
+- Prints turn/straight instructions backwards because the 
+	print() function iterates until src == dest
+	and then prints from dest --> backwards --> src
+- I made a stack just because to make it easier to visualize which nodes are being visited
+*/
 void print(struct dijkstra* graph, int src, int dest)
 {
-    
-
-	//queue<int> mystack;
 	stack<int> mystack;
-	
 	int i, k, node1, node2;
-	//gNode direction;
 	
-    printf("\nShortest Path from vertex %i", src);
-    printf(": \n\n");
+	printf("\nInstructions from source { %i } ", src);
 
     for (i = 0; i <= vertices; i++)
     {	
 		if (i == dest)
         {
 			
-			printf("to vertex %i", i);
+			printf("to vertex { %i }", i);
 
-			printf(" is: ");
+			printf(" is: \n");
 			k = i;
 
-			printf("%i", k);
-			printf(" << ");
 			mystack.push (k);
 
+			printf("(Read from the bottom up) \n\n");
 			while (graph->curPosition[k] != src)
-			{		
-				
-				printf("(((%i)))", graph->curPosition[k]);
-				printf(" << ");
-				
+			{	
 				k = graph->curPosition[k];
 
 				
-				node2 = mystack.top();
-				printf("~node2~ is %i\n", node2);
+				node2 = mystack.top(); 
+				/* Stores "Next" node (int) value so that I can access the node object! */
 				mystack.push (k);
-				
 				node1 = mystack.top();
-				printf("~node1~ is %i\n", node1);
+				/* Stores "Current" node (int) value so that I can access the node object! */
 				
-				if( graph->edgeWeight[node1][node2].right == true)
+				if( graph->edgeWeight[node1][node2].right == true) 
+				// graph->edgeWeight[node1][node2].right is my node object
 					{
 						printf("***TURN RIGHT\n");
 					}
 					else
 					{
-						printf("***Go Straight\n");
+						printf("Move forward\n");
 					}
 			}
-			mystack.push(src);
-							if( graph->edgeWeight[src][node1].right == true)
+
+			/*
+			Pushing the src node outside of while loop because
+			src is not needed to find neighboring nodes
+			*/
+			mystack.push(src); 
+			if( graph->edgeWeight[src][node1].right == true)
 					{
 						printf("***TURN RIGHT\n");
 					}
 					else
 					{
-						printf("***Go Straight\n");
+						printf("Move forward\n");
 					}
 
-			//print travel weight
-			printf("%i", src);
-			printf("\n Weight : %i", graph->nWeight[i]);
+			printf("\nTravel distance (total edge weight traveled) : %i", graph->nWeight[i]);
 			printf("\n\n");
-
         }
     }
-
-	
-		//queue content
-		printf("Stack content is: ");
+		printf("Node traversal: ");
 		while(!mystack.empty())
 		{
-			printf("%i ", mystack.top());
+			printf("%i >> ", mystack.top());
 			mystack.pop();
 		}
+		printf("Done!");
 }
