@@ -37,6 +37,16 @@
  *  snap.putChar('\n', 100);// terminating character
  *
  */
+
+/*command
+ *     update = 'U',
+ *     setETM = 'T',
+ *     merge  = 'M',
+ *     help   = 'E',
+ *     getDest= 'D'
+ */
+
+//SNAP::SNAP(uint8_t priority):scheduler_task("wireless", 512, priority)//for scheduler
 SNAP::SNAP()
 {
    //add semaphore
@@ -45,42 +55,44 @@ SNAP::SNAP()
    rtc_init (); //initialize RTC
    time = rtc_gettime ();
 }
-//int SNAP::newDest()
-//{
-//    return 0;
-//}
-bool SNAP::sendUpdate(int location,int status,int speed)
+
+bool SNAP::send_Update(int location,int status,int speed)
 {
     //add semaphore
     Uart3& wireless = Uart3::getInstance();
-    if(wireless.printf("U%d:%d:%d,%d,%d,%d\n",time.hour, time.min, time.sec, location, status,speed))
+    if(wireless.printf("U%i:%i:%i,%i,%i,%i\n",time.hour, time.min, time.sec, location, status,speed))
         return true;
     else
         return false;
 }
 
-bool SNAP::sendETM(int speed, int ticks)
+bool SNAP::send_Estimated_Time_to_Merge(int speed, int ticks)
 {
     Uart3& wireless = Uart3::getInstance();
     int ETM = ticks/speed;
-    if(wireless.printf("T%d",ETM))
+    if(wireless.printf("T%i",ETM))
         return true;
     else
         return false;
 }
-bool SNAP::sendMerge(int speed, int ticks)
-{
-    return sendETM(speed, ticks);
-}
-bool SNAP::sendHelp(int status)
+bool SNAP::send_Merge(int speed, int ticks)
 {
     Uart3& wireless = Uart3::getInstance();
-    if(wireless.printf("E%d",status))
+    int ETM = ticks/speed;
+    if(wireless.printf("M%i",ETM))
+        return true;
+    else
+        return false;
+}
+bool SNAP::send_Help(int status)
+{
+    Uart3& wireless = Uart3::getInstance();
+    if(wireless.printf("E%i",status))
         return true;
     else
         return false;;
 }
-char SNAP::getCMD(char*)
+char SNAP::get_CMD()
 {
     //add semaphore
     char cmd;
@@ -89,7 +101,7 @@ char SNAP::getCMD(char*)
     return cmd;
 }
 
-bool SNAP::test()
+bool SNAP::send_Test()
 {
     //add semaphore
     Uart3& wireless = Uart3::getInstance();
@@ -100,10 +112,22 @@ bool SNAP::test()
     else
         return false;
 }
-//void SNAP::setTime()//TODO
-//{
-//    rtc_t update;
-//    sendCMD("X");
-//
-//    rtc_settime (&update);
-//}
+int  SNAP::get_Dest()
+{
+    Uart3& wireless = Uart3::getInstance();
+    char test[] ={"TEST"};
+    wireless.putline("D",200);
+    if(wireless.gets(test,6,200))
+        return true;
+    else
+        return false;
+}
+void SNAP::get_Time()//TODO
+{
+    rtc_t update;
+    Uart3& wireless = Uart3::getInstance();
+    wireless.putChar('X',1000);
+    wireless.scanf("%i %i %i %i %i %i %i %i", update.sec, update.min, update.hour,
+            update.dow, update.day, update.month, update.year, update.doy);
+    rtc_settime (&update);
+}
