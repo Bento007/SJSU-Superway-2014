@@ -1,21 +1,93 @@
 /*
- * StateMachine.hpp
+ * superwayTasks.hpp
  *
- *  Created on: Mar 12, 2014
- *      Author: Bento007
- *
- *      This is is the brains of the pod, and the core of it's
- *      functionality
+ *  Created on: Apr 6, 2014
+ *      Author: Eriberto
  */
 
-#ifndef STATEMACHINE_HPP_
-#define STATEMACHINE_HPP_
+#ifndef SUPERWAYTASKS_HPP_
+#define SUPERWAYTASKS_HPP_
 
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
 #include "tasks.hpp"
 #define QDelay 100
+/**********************************
+ * Task Priorities
+ * --- State Machine:   Low
+ * --- Pathing:         Medium
+ * --- Wireless:        High
+ ***********************************/
+
+/**********************************
+ * Shared Queues
+ **********************************/
+QueueHandle_t   SMtoWireless,       //State machine -> wireless
+                WirelesstoSM,       //Wireless -> State machine
+                SMtoLineFollower,   //State machine -> Line follower
+                lineFollowertoSM,   //Line follower -> State Machine
+                SMtoPath,           //State machine -> Pathing (djikstra)
+                directions;         //Pathing (djikstra) -> State machine
+//TODO: check if more queues are needed
+
+/**********************************
+ * Wireless Task
+ * -------------
+ * Receives data from state machine
+ * -through SMtoWireless queue.
+ * Can send data to state machine
+ * -through WirelesstoSM queue.
+ *********************************/
+ void wirelessTask(void *p)
+ {
+//     podStatus pod;
+
+//     if(xQueueReceive(SMtoWireless, &pod, 100);
+//     Info was requested by a SNAP so send: the pod's speed, location, and name.
+//     from inside podStatus "pod" struct. This is retrieved from State machine task.
+
+//     if this pod receives, from another snap, the following
+//     -Destination:
+//        Then send new destination to pathing, for new path.
+//     -Speed:
+//        Send new speed to SM task to set in line follower.
+//     -Update:
+//        This request requires pod to send its location, speed, and "status"
+//             Note: Status not yet implemented. (OPTIONAL).
+//     -Time:
+//        Not sure what to do with this... yet. (optional?)
+
+ }
+
+/***********************************
+ * Djikstra Task
+ * -------------
+ * Sends info to state machine thru
+ * -directions queue.
+ * Receives data from SM thru
+ * -SMtoPath queue.
+ ***********************************/
+void pathingTask(void *p)
+{
+//    From Wireless task, may receive:
+//         -New destination to calculate path for.
+//         -Some update status for the map. Maybe a route is blocked.
+//
+//    From Fat32, will receive:
+//         -Contents, the map.
+//
+//    To Fat32, will send:
+//         -New map weights. Routes may be inaccessible now.
+//
+//    To State machine, will send:
+//         -List of directions via the directions queue. Can be array with
+//          instructions for each "node"
+}
+
+/************************************
+ * State Machine Code Below
+ ***********************************/
 
 /* To communicate with wireless network!
  *
@@ -58,11 +130,14 @@ enum PRT_States{
 //Directives will be sent to a queue that the line follower will receive and
 //will respond accordingly.
 enum Directives{
+    stop    =0,     //Make a full stop
     forward =1,     //Continue going straight
     turn    =2,     //Break from straight line, make the turn off
     yield   =3,     //Slow the pod down
-    stop    =0,     //Make a full stop
-    //wait    =5      //Hold position
+    tMotors =100,   //command to initiate motor check
+    tSpdRd  =200,   //command to initiate speed sensor check
+    tQueue  =300    //command to test communication with line follower
+    //wait    =4      //Hold position
 };
 
 
@@ -101,28 +176,40 @@ typedef struct node{
         union nodeInfo info ;       //points to the info about the node
 }trackSection;
 
+typedef struct{
+        /***********************************************
+         * podStatus structs are passed from the State
+         * machine to the Wireless task upon request
+         * from the Wireless task. Can occur at any time.
+         ***********************************************/
+        char name[4];
+        char type;
+        int speed;
+}podStatus;
 
-void StateMachine()
+
+void StateMachine(void *p)
 {
     /*initialize variables here*/
     //Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
     PRT_States current= startup, next;
-    //TODO initialize variable/buffer to store messages in.
-    //TODO initialize directives queue to be shared
-    //between line follower and State machine
-
-    int command = 0;
+    podStatus pod;
+    //int speedChange;
+    //TODO setup SPI for arduino comms, need to test with other project first.
+    //TODO initialize structs to be used with inter-task comms.
     //TODO initialize memory, if any is used
-    //QueueHandle_t directions;
-    //node map[x][y];
-
+    //int errorCounter=0;
     /*begin state machine*/
     while(1)
     {
 
-        //To send from SM to line follower just do the following.
+//        To send from SM to line follower just do the following.
 //        if(!xQueueSend(directives, &command, 100))
 //            puts("Failed!\n");
+
+//          Check queues for any information from other tasks.
+//        if(xQueueReceive(directions, type, 100))              //new directions arrived.
+//        if(xQueueReceive(WirelesstoSM, &speedChange, 100))    //set new speed
 
         switch(current)
         {
@@ -134,25 +221,11 @@ void StateMachine()
                  *  next = error
                  */
 
-                //Send a char, to check comm works
-                //snap.putChar('H', QDelay);
-                //snap.putChar('\n', QDelay);
-                char *b;
-
-                //TODO add initialization function to line follower
-                //-----have it return a value through queue handles to use here.
-
-                //if(snap.gets(b, 1, QDelay)){
-                //for now checks UART3 then moves on
-                //add more conditions later.
-                    next = ready;
-                //}
-
-//                else{
-//                //At least one check has failed
-//                    next =  error;
-//                }
-
+                //send command to arduino to "test" motors
+                //Read from sensors, do quick check?
+                //Send/Receive from SNAP a comm check
+                //Send/Receive a command to djikstra task, verify its alive.
+                //errorCounter++;
                 break;
 
             case ready:
@@ -163,26 +236,25 @@ void StateMachine()
                  * check if directions queue is empty
                  */
                 //if(direction ==NULL)//no directions for client
-                    next = roam;
+                next = roam;
 
                 //else //has a direction to get clients
-                    next = pickup;
-
+                //next = pickup;
                 break;
 
             case error:
+//                errorCounter =0;
                 //send error status to the snap/computer
                 //save error info
-                //send stop command to pod?
-                    //-use commandQueue
+                //send stop command to pod
                 break;
 
             case roam:
                 //Traveling mode
 
+                //busy bit unset, means available.
                 //if NO directions
                 //--run around for fun
-                //--or head to a depot
                 break;
 
             case pickup:
@@ -198,7 +270,7 @@ void StateMachine()
             case load:
                 //Waiting mode:
 
-
+                //same as unload basically.
                 //TODO:am i loaded?
                 //if so
                 //next = dropoff
@@ -209,7 +281,7 @@ void StateMachine()
 
             case dropoff:
                 //Traveling mode
-
+                //busy bit set, same as pickup basically.
                 //reached correct destination?
                 //go to unload
 
@@ -219,16 +291,11 @@ void StateMachine()
 
             case unload:
                 //Waiting mode
-                //to simulate an unload sequence, wait a few seconds
+                //To simulate unloading, send stop to line follower
+                //delay a couple miliseconds to simulate.
                 //next = ready
                 break;
 
-//these states are doubles or unneeded
-//            case startup: break;
-//
-//            case ready: break;
-//
-//            default: break;
         }
 
         current = next;// store the next state
@@ -236,6 +303,4 @@ void StateMachine()
 
 }
 
-
-#undef QDelay
-#endif /* STATEMACHINE_HPP_ */
+#endif /* SUPERWAYTASKS_HPP_ */
