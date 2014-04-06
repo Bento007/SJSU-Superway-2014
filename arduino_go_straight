@@ -1,0 +1,55 @@
+int leftmotor = 11;     
+int rightmotor = 10;
+
+int aMUX = 8;
+int bMUX = 9;
+
+int lleftsensor = 3;    //  very left sensor
+int middlesensor = 5;
+int rrightsensor = 7;    //  very right sensor
+int lleft=0;    // reading
+int middle=0;
+int rright=0;   // reading
+
+int locationCounter = 0;
+int counterLight=2;
+boolean turning=true;
+int pwmgo = 255;
+int pwmslow = 200;
+int pwmstop = 0;
+
+void setup() {                
+  pinMode(leftmotor, OUTPUT);  
+  pinMode(rightmotor, OUTPUT);
+  pinMode(aMUX, OUTPUT); 
+  pinMode(bMUX, OUTPUT); 
+  pinMode(counterLight, OUTPUT); 
+  pinMode(locationCounter, INPUT); 
+  pinMode(lleftsensor, INPUT);   
+  pinMode(middlesensor, INPUT);   
+  pinMode(rrightsensor, INPUT);   
+}
+
+void loop() {    /// the pod can only go straight
+  lleft = digitalRead(lleftsensor);   
+  middle = digitalRead(middlesensor);
+  rright = digitalRead(rrightsensor);   
+
+  if((lleft==LOW)&&(rright==LOW)) {
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);  // read sensor values
+  }  
+  if((lleft==HIGH)&&(rright==LOW)) {
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);  // read sensor values
+  }  
+  if((lleft==LOW)&&(rright==HIGH)) {
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);  // read sensor values
+  }  
+  if((lleft==HIGH)&&(rright==HIGH)){     
+    digitalWrite(aMUX, LOW);      // select 0b10 = go straight
+    digitalWrite(bMUX, HIGH);
+  }
+
+}
