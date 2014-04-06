@@ -1,0 +1,95 @@
+int leftmotor = 11;     
+int rightmotor = 10;
+
+int aMUX = 8;
+int bMUX = 9;
+
+int lleftsensor = 3;    //  very left sensor
+int middlesensor = 5;
+int rrightsensor = 7;    //  very right sensor
+int lleft=0;    // reading
+int middle=0;
+int rright=0;   // reading
+
+int locationCounter = 0;
+int counterLight=2;
+boolean turning=true;
+int pwmgo = 255;
+int pwmslow = 200;
+int pwmstop = 0;
+char black=HIGH;
+char white=LOW;
+
+void setup() {                
+  pinMode(leftmotor, OUTPUT);  
+  pinMode(rightmotor, OUTPUT);
+  pinMode(aMUX, OUTPUT); 
+  pinMode(bMUX, OUTPUT); 
+  pinMode(counterLight, OUTPUT); 
+  pinMode(locationCounter, INPUT); 
+  pinMode(lleftsensor, INPUT);   
+  pinMode(middlesensor, INPUT);   
+  pinMode(rrightsensor, INPUT);   
+}
+
+void loop() {    // all sensors are active low
+  lleft = digitalRead(lleftsensor);   
+  middle = digitalRead(middlesensor);
+  rright = digitalRead(rrightsensor);   
+
+  // LOW = white
+  // HIGH = black
+  if((lleft==black)&&(middle==black)&&(rright==white)){     
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);      
+  }
+  if((lleft==white)&&(middle==black)&&(rright==black)){     
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);      
+  }
+  if((lleft==black)&&(middle==black)&&(rright==black)){   // this is a merge, call a function  
+    //goRight();
+    digitalWrite(aMUX, LOW);      // select 0b01 = go straight
+    digitalWrite(bMUX, HIGH);     
+  }
+  if((lleft==white)&&(middle==white)&&(rright==white)) {
+    digitalWrite(aMUX, HIGH);      // select 0b01 = arduino controlled
+    digitalWrite(bMUX, LOW);      
+    digitalWrite(leftmotor, LOW);  // stop
+    digitalWrite(rightmotor, LOW);
+  }  
+  if((lleft==white)&&(middle==white)&&(rright==black)){
+    digitalWrite(aMUX, HIGH);      // select 0b01 = arduino controlled
+    digitalWrite(bMUX, LOW);  
+    digitalWrite(leftmotor, HIGH);   // turn right
+    digitalWrite(rightmotor, LOW);    
+  }
+  if((lleft==black)&&(middle==white)&&(rright==white)) {    
+    digitalWrite(aMUX, HIGH);      // select 0b01 = arduino controlled
+    digitalWrite(bMUX, LOW);  
+    digitalWrite(leftmotor, LOW);   // turn left
+    digitalWrite(rightmotor, HIGH);
+  }  
+  if((lleft==black)&&(middle==white)&&(rright==black)) {
+    digitalWrite(aMUX, HIGH);      // select 0b11 = turn right
+    digitalWrite(bMUX, HIGH);  
+  }  
+  if((lleft==white)&&(middle==black)&&(rright==white)){     
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);      // go straight
+  }
+
+}
+
+void goRight(){
+  boolean exit=false;
+  while(exit){
+    digitalWrite(aMUX, HIGH);      // select 0b11 = turn right
+    digitalWrite(bMUX, HIGH);
+    lleft = digitalRead(lleftsensor);
+    if(lleft==white){
+     exit=false;
+     return;
+    }
+  }
+}
