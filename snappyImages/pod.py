@@ -14,9 +14,9 @@ from synapse.switchboard import *   # crossConnect()
 from pod_func import *              #includes all the pods comands.
 
 #global variables
-PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
+# PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
 NET_ID = "\x90\x01"
-NET_GROUP_ALL = "\xFF\xFF"
+# NET_GROUP_ALL = "\xFF\xFF"
 """messages need to be recieved from wireless and buffered. 
     The first byte the type and piority
     needed variables 
@@ -31,7 +31,7 @@ NET_GROUP_ALL = "\xFF\xFF"
         send data from UART <-> SNAP 
         send data from SNAP <-> SNAP
         """
-        
+      
 @setHook(HOOK_STARTUP)
 def startupEvent():     #Status: Done, Tested
     """System startup code, invoked automatically 
@@ -42,6 +42,9 @@ def startupEvent():     #Status: Done, Tested
     flowControl(1, False, True) # <= set flow control to True or False as needed
     crossConnect(DS_UART1, DS_STDIO)#connect uart1 to STDIO
     crossConnect(DS_UART1, DS_TRANSPARENT)#connect uart1 to wireless
+    while not getActive():
+        register()
+        
 @setHook(HOOK_STDIN)
 def stdinEvent(buf):    #Status: Done, not tested
     """Receive handler for character input from SJONE to SNAP.

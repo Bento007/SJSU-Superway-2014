@@ -1,3 +1,4 @@
-/pod_func.pyc
+*.pyc
 /.project
 /.pydevproject
+

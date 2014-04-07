@@ -8,7 +8,8 @@
 #-----Network addresses and groups
 NET_ID = "\x01\x90"
 NET_GROUP_ALL = "\xFF\xFF"
-
+PORTAL_ADDR = "\x00\x00\x20"
+active = 0  #must be set before the pod can get directions
 #-----Last command and parameters
 # cmd = 0                     # Tracks the current command
 # addr= 0                     # Current address tallking too 
@@ -102,6 +103,8 @@ def mergeRPC(remoteETM,remoteLoca): #Status: WIP
             if not action: #yield fails
                 ETM = remoteETM + 4
             
+def register():
+    rpc( PORTAL_ADDR, registerRPC, location)
 def stopRPC(time):  #Status: WIP
     """tells a pod to stop ASAP"""
     print "H "
@@ -137,6 +140,8 @@ def yieldRPC(remoteYields): #Status: WIP
 #     print cmd
 # def getData():  #status: Done, Tested
 #     print data  #prints global data value
+def getActive():
+    return active
 def getDest():  #status: Done, Tested
     """prints the current destination"""
     print "D ",cDest
@@ -163,6 +168,9 @@ def getGlobals():  #status: Done, Tested
 #     """Used for testing CMD"""
 #     global cmd
 #     cmd = x
+def getActive():
+    global active
+    active = 1
 def setDest(destIn):    #status: Done, Tested
     global cDest
     cDest = destIn
