@@ -4,32 +4,36 @@ int rightmotor = 10;
 int aMUX = 8;
 int bMUX = 9;
 
-int lleftsensor = 3;    //  very left sensor
-int middlesensor = 5;
+int lleftsensor = 5;    //  very left sensor
+int middlesensor = 6;
 int rrightsensor = 7;    //  very right sensor
-int lleft=0;    // reading
-int middle=0;
-int rright=0;   // reading
+int lleft=LOW;    // reading
+int middle=LOW;
+int rright=LOW;   // reading
 
 int locationCounter = 0;
-int counterLight=2;
+int counterLightWhite=3;
+int counterLightPurple=2;
 boolean turning=true;
 int pwmgo = 255;
 int pwmslow = 200;
 int pwmstop = 0;
-char black=HIGH;
-char white=LOW;
+int black=HIGH;
+int white=LOW;
 
 void setup() {                
   pinMode(leftmotor, OUTPUT);  
   pinMode(rightmotor, OUTPUT);
   pinMode(aMUX, OUTPUT); 
   pinMode(bMUX, OUTPUT); 
-  pinMode(counterLight, OUTPUT); 
+  pinMode(counterLightWhite, OUTPUT); 
+  pinMode(counterLightPurple, OUTPUT); 
   pinMode(locationCounter, INPUT); 
   pinMode(lleftsensor, INPUT);   
   pinMode(middlesensor, INPUT);   
-  pinMode(rrightsensor, INPUT);   
+  pinMode(rrightsensor, INPUT); 
+  digitalWrite(counterLightWhite, LOW);
+  digitalWrite(counterLightPurple, LOW);  
 }
 
 void loop() {    // all sensors are active low
@@ -37,44 +41,44 @@ void loop() {    // all sensors are active low
   middle = digitalRead(middlesensor);
   rright = digitalRead(rrightsensor);   
 
+
   // LOW = white
   // HIGH = black
-  if((lleft==black)&&(middle==black)&&(rright==white)){     
+  if((lleft==HIGH)&&(middle==HIGH)&&(rright==LOW)){     
+    digitalWrite(counterLightWhite, HIGH);
     digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);      
   }
-  if((lleft==white)&&(middle==black)&&(rright==black)){     
+  if((lleft==LOW)&&(middle==HIGH)&&(rright==HIGH)){   
+    digitalWrite(counterLightWhite, HIGH);  
     digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);      
   }
-  if((lleft==black)&&(middle==black)&&(rright==black)){   // this is a merge, call a function  
-    //goRight();
-    digitalWrite(aMUX, LOW);      // select 0b01 = go straight
-    digitalWrite(bMUX, HIGH);     
+  if((lleft==HIGH)&&(middle==HIGH)&&(rright==HIGH)){   // this is a merge, call a function  
+    goRight();
   }
-  if((lleft==white)&&(middle==white)&&(rright==white)) {
-    digitalWrite(aMUX, HIGH);      // select 0b01 = arduino controlled
-    digitalWrite(bMUX, LOW);      
-    digitalWrite(leftmotor, LOW);  // stop
-    digitalWrite(rightmotor, LOW);
+  if((lleft==LOW)&&(middle==LOW)&&(rright==LOW)) {
+    digitalWrite(counterLightWhite, HIGH);
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);   
   }  
-  if((lleft==white)&&(middle==white)&&(rright==black)){
-    digitalWrite(aMUX, HIGH);      // select 0b01 = arduino controlled
-    digitalWrite(bMUX, LOW);  
-    digitalWrite(leftmotor, HIGH);   // turn right
-    digitalWrite(rightmotor, LOW);    
+  if((lleft==LOW)&&(middle==LOW)&&(rright==HIGH)){
+    digitalWrite(counterLightWhite, HIGH);  
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);    
   }
-  if((lleft==black)&&(middle==white)&&(rright==white)) {    
-    digitalWrite(aMUX, HIGH);      // select 0b01 = arduino controlled
+  if((lleft==HIGH)&&(middle==LOW)&&(rright==LOW)) {    
+    digitalWrite(counterLightWhite, HIGH);  
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);  
-    digitalWrite(leftmotor, LOW);   // turn left
-    digitalWrite(rightmotor, HIGH);
   }  
-  if((lleft==black)&&(middle==white)&&(rright==black)) {
+  if((lleft==HIGH)&&(middle==LOW)&&(rright==HIGH)) {
+    digitalWrite(counterLightWhite, LOW);  
     digitalWrite(aMUX, HIGH);      // select 0b11 = turn right
     digitalWrite(bMUX, HIGH);  
   }  
-  if((lleft==white)&&(middle==black)&&(rright==white)){     
+  if((lleft==LOW)&&(middle==HIGH)&&(rright==LOW)){     
+    digitalWrite(counterLightWhite, HIGH);
     digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);      // go straight
   }
@@ -82,13 +86,15 @@ void loop() {    // all sensors are active low
 }
 
 void goRight(){
-  boolean exit=false;
+  boolean exit=true;
+  digitalWrite(counterLightPurple, HIGH);
   while(exit){
     digitalWrite(aMUX, HIGH);      // select 0b11 = turn right
     digitalWrite(bMUX, HIGH);
     lleft = digitalRead(lleftsensor);
-    if(lleft==white){
+    if(lleft==LOW){
      exit=false;
+     digitalWrite(counterLightPurple, LOW);
      return;
     }
   }
