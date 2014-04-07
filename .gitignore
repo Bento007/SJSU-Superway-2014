@@ -63,4 +63,12 @@ $RECYCLE.BIN/
 *.app
 *.i*86
 *.x86_64
-*.hex
+*.hex/.project
+/.pydevproject
+/.project
+
+# Python Compiled code
+*.pyc
+
+# XML files
+*.xml

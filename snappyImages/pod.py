@@ -14,9 +14,9 @@ from synapse.switchboard import *   # crossConnect()
 from pod_func import *              #includes all the pods comands.
 
 #global variables
-PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
-NET_ID = "\x01\x90"
-NET_GROUP_ALL = "\xFF\xFF"
+# PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
+NET_ID = "\x90\x01"
+# NET_GROUP_ALL = "\xFF\xFF"
 """messages need to be recieved from wireless and buffered. 
     The first byte the type and piority
     needed variables 
@@ -31,34 +31,26 @@ NET_GROUP_ALL = "\xFF\xFF"
         send data from UART <-> SNAP 
         send data from SNAP <-> SNAP
         """
-
+      
 @setHook(HOOK_STARTUP)
 def startupEvent():     #Status: Done, Tested
     """System startup code, invoked automatically 
     (do not call this manually)"""
     saveNvParam(3,NET_ID) #the default NET_ID
-    initUart(DS_UART0,9600, 8, 'N',1)# set baudrate
+    initUart(DS_UART0,19200, 8, 'N',1)# set baudrate
     stdinMode(0, False)
     flowControl(1, False, True) # <= set flow control to True or False as needed
     crossConnect(DS_UART1, DS_STDIO)#connect uart1 to STDIO
+    crossConnect(DS_UART1, DS_TRANSPARENT)#connect uart1 to wireless
+    while not getActive():
+        register()
+        
 @setHook(HOOK_STDIN)
 def stdinEvent(buf):    #Status: Done, not tested
     """Receive handler for character input from SJONE to SNAP.
        The parameter 'buf' will contain one or more 
        received characters."""
- 
-    n = len(buf)
-    
-    if n < 4:      # mcastRPC command
-        COM(buf[0],buf[1:])
-    else:          # local data is being updated
-        setLocals(buf[0:5], buf[6:8], buf[9:10] , buf[11], buf[12:])
-        """cTime = buf[0:5] #HH:MM:SS
-            cLoca = buf[6:8] #NN:P
-            cTick = buf[9:10] #ticks to merge
-            cStat = buf[11]   #current status
-            cSped = buf[12:] #current speed
-        """
+    COM(buf[0],buf[1:])
 
 @setHook(HOOK_STDOUT)
 def printed():          #Status: not done, not tested
