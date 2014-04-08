@@ -3,6 +3,7 @@
  *
  *  Created on: Mar 28, 2014
  *      Author: Bento007
+ *      This contains the functions definition for the SNAP.hpp library.
  */
 
 #include <SNAP.h>
@@ -46,7 +47,7 @@
  *     getDest= 'D'
  */
 
-//SNAP::SNAP(uint8_t priority):scheduler_task("wireless", 512, priority)//for scheduler
+//SNAP::SNAP(uint8_t priority):scheduler_task("wireless", 512, priority, NULL)//for scheduler
 SNAP::SNAP()
 {
    //add semaphore
@@ -54,9 +55,12 @@ SNAP::SNAP()
    wireless.init(19200,32,32);
    rtc_init (); //initialize RTC
    time = rtc_gettime ();
+   status = 0;
+   speed = 0;
+   ticks = 0;
 }
 
-bool SNAP::send_Update(int location,int status,int speed)
+bool SNAP::send_Update(uint32_t location,uint8_t status,uint32_t speed)
 {
     //add semaphore
     Uart3& wireless = Uart3::getInstance();
@@ -66,16 +70,7 @@ bool SNAP::send_Update(int location,int status,int speed)
         return false;
 }
 
-bool SNAP::send_Estimated_Time_to_Merge(int speed, int ticks)
-{
-    Uart3& wireless = Uart3::getInstance();
-    int ETM = ticks/speed;
-    if(wireless.printf("T%i",ETM))
-        return true;
-    else
-        return false;
-}
-bool SNAP::send_Merge(int speed, int ticks)
+bool SNAP::send_Estimated_Time_to_Merge(uint32_t speed, int ticks)
 {
     Uart3& wireless = Uart3::getInstance();
     int ETM = ticks/speed;
@@ -84,10 +79,18 @@ bool SNAP::send_Merge(int speed, int ticks)
     else
         return false;
 }
-bool SNAP::send_Help(int status)
+bool SNAP::send_Merge(uint32_t location,uint8_t status,uint32_t speed, int ticks)
+{
+    if(send_Update(location,status,speed) &&
+            send_Estimated_Time_to_Merge(speed,ticks))
+        return true;
+    else
+        return false;
+}
+bool SNAP::send_Help(uint8_t status, uint32_t location )  //sends help to SNAP
 {
     Uart3& wireless = Uart3::getInstance();
-    if(wireless.printf("E%i",status))
+    if(wireless.printf("E%i,%i",status,location))
         return true;
     else
         return false;;
@@ -97,7 +100,7 @@ char SNAP::get_CMD()
     //add semaphore
     char cmd;
     Uart3& wireless = Uart3::getInstance();
-    wireless.getChar(&cmd,100);
+    wireless.scanf("%c",&cmd);
     return cmd;
 }
 
@@ -115,12 +118,34 @@ bool SNAP::send_Test()
 int  SNAP::get_Dest()
 {
     Uart3& wireless = Uart3::getInstance();
-    char test[] ={"TEST"};
+    uint8_t dest;
     wireless.putline("D",200);
-    if(wireless.gets(test,6,200))
+    if(wireless.scanf("%i",&dest))
+        return dest;
+    else
+        return false;
+}
+int SNAP::get_Help()
+{
+    int dest;
+    Uart3& wireless = Uart3::getInstance();
+    wireless.scanf("%i",&dest);
+    return dest;
+}
+bool SNAP::get_Update(uint32_t* dest,uint32_t* weight)
+{
+    Uart3& wireless = Uart3::getInstance();
+    if(wireless.scanf("%i %i",*dest,*weight))
         return true;
     else
         return false;
+}
+int SNAP::get_Merge()    //get the new time to merge
+{
+    int etm;
+    Uart3& wireless = Uart3::getInstance();
+    wireless.scanf("%i %i",&etm);
+    return etm;
 }
 void SNAP::get_Time()//TODO
 {

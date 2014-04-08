@@ -3,15 +3,25 @@
  *
  *  Created on: Apr 6, 2014
  *      Author: Eriberto
+ *
+ *  Edit on Apr 7, 2014
+ *      Editor: Trent
+ *      -Added "SNAP.h"
+ *      -added functionality to wirelesstask.
  */
 
 #ifndef SUPERWAYTASKS_HPP_
 #define SUPERWAYTASKS_HPP_
 
+#include <stdint.h>
+
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
-#include "tasks.hpp"
+
+#include "SNAP.H"
+
+
 #define QDelay 100
 /**********************************
  * Task Priorities
@@ -41,22 +51,51 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
  *********************************/
  void wirelessTask(void *p)
  {
+     SNAP me;
 //     podStatus pod;
+     uint32_t temp1,temp2;
+     while(1)
+     {
+         temp1 = 0;
+         temp2 = 0;
+         switch(me.get_CMD())
+         {
+             case 'U'://get a graph update and send it to pathing
+                 me.get_Update(&temp1, &temp2);
+                 //TODO: add shared queue to send to pathing
+                 break;
+             case 'M'://tell stateMachineTask to change speed for merge
+                 temp1 = me.get_Merge();
+                 //TODO: add shared queue to send to statemachine
+                 break;
+             case 'E'://give pathingTask a graph update
+                 temp1 = me.get_Help();
+                 //TODO: add shared queue to send to pathing
+                 break;
+             case 'D'://give pathingTask new destination
+                 //TODO: add shared queue to send to pathing
+                 temp1 = me.get_Dest();
+                 break;
+             default://send to SNAP invalid CMD
+                 break;
 
-//     if(xQueueReceive(SMtoWireless, &pod, 100);
-//     Info was requested by a SNAP so send: the pod's speed, location, and name.
-//     from inside podStatus "pod" struct. This is retrieved from State machine task.
+         }
+     //     if(xQueueReceive(SMtoWireless, &pod, 100));
+     //     Info was requested by a SNAP so send: the pod's speed, location, and name.
+     //     from inside podStatus "pod" struct. This is retrieved from State machine task.
 
-//     if this pod receives, from another snap, the following
-//     -Destination:
-//        Then send new destination to pathing, for new path.
-//     -Speed:
-//        Send new speed to SM task to set in line follower.
-//     -Update:
-//        This request requires pod to send its location, speed, and "status"
-//             Note: Status not yet implemented. (OPTIONAL).
-//     -Time:
-//        Not sure what to do with this... yet. (optional?)
+     //     if this pod receives, from another snap, the following
+     //     -Destination:
+     //        Then send new destination to pathing, for new path.
+     //     -Speed:
+     //        Send new speed to SM task to set in line follower.
+     //     -Update:
+     //        This request requires pod to send its location, speed, and "status"
+     //             Note: Status not yet implemented. (OPTIONAL).
+     //     -Time:
+     //        Not sure what to do with this... yet. (optional?)
+
+     }
 
  }
 
@@ -68,6 +107,7 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
  * Receives data from SM thru
  * -SMtoPath queue.
  ***********************************/
+
 void pathingTask(void *p)
 {
 //    From Wireless task, may receive:
