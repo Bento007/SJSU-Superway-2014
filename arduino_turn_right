@@ -45,14 +45,12 @@ void loop() {    // all sensors are active low
   // LOW = white
   // HIGH = black
   if((lleft==HIGH)&&(middle==HIGH)&&(rright==LOW)){     
-    digitalWrite(counterLightWhite, HIGH);
-    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
-    digitalWrite(bMUX, LOW);      
+    digitalWrite(aMUX, LOW);      // select 0b10 = go straight
+    digitalWrite(bMUX, HIGH);      
   }
   if((lleft==LOW)&&(middle==HIGH)&&(rright==HIGH)){   
-    digitalWrite(counterLightWhite, HIGH);  
-    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
-    digitalWrite(bMUX, LOW);      
+    digitalWrite(aMUX, LOW);      // select 0b10 = go straight
+    digitalWrite(bMUX, HIGH);     
   }
   if((lleft==HIGH)&&(middle==HIGH)&&(rright==HIGH)){   // this is a merge, call a function  
     goRight();
