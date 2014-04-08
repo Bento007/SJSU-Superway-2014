@@ -4,16 +4,16 @@ int rightmotor = 10;
 int aMUX = 8;
 int bMUX = 9;
 
-int lleftsensor = 3;    //  very left sensor
-int middlesensor = 5;
+int lleftsensor = 5;    //  very left sensor
+int middlesensor = 6;
 int rrightsensor = 7;    //  very right sensor
 int lleft=0;    // reading
 int middle=0;
 int rright=0;   // reading
 
 int locationCounter = 0;
-int counterLight=2;
-boolean turning=true;
+int lightWhite=3;
+int lightPurple=2;
 int pwmgo = 255;
 int pwmslow = 200;
 int pwmstop = 0;
@@ -23,11 +23,15 @@ void setup() {
   pinMode(rightmotor, OUTPUT);
   pinMode(aMUX, OUTPUT); 
   pinMode(bMUX, OUTPUT); 
-  pinMode(counterLight, OUTPUT); 
+  pinMode(lightWhite, OUTPUT); 
+  pinMode(lightPurple, OUTPUT); 
   pinMode(locationCounter, INPUT); 
   pinMode(lleftsensor, INPUT);   
   pinMode(middlesensor, INPUT);   
-  pinMode(rrightsensor, INPUT);   
+  pinMode(rrightsensor, INPUT);  
+ 
+  digitalWrite(lightWhite, LOW);   
+  digitalWrite(lightPurple, LOW); 
 }
 
 void loop() {    /// the pod can only go straight
@@ -35,19 +39,39 @@ void loop() {    /// the pod can only go straight
   middle = digitalRead(middlesensor);
   rright = digitalRead(rrightsensor);   
 
-  if((lleft==LOW)&&(rright==LOW)) {
+  if((lleft==LOW)&&(middle==LOW)&&(rright==LOW)) {
     digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);  // read sensor values
   }  
-  if((lleft==HIGH)&&(rright==LOW)) {
+  if((lleft==HIGH)&&(middle==LOW)&&(rright==LOW)) {
     digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);  // read sensor values
   }  
-  if((lleft==LOW)&&(rright==HIGH)) {
+  if((lleft==LOW)&&(middle==LOW)&&(rright==HIGH)) {
+    digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
+    digitalWrite(bMUX, LOW);  // read sensor values
+  } 
+  if((lleft==LOW)&&(middle==HIGH)&&(rright==LOW)) {
     digitalWrite(aMUX, LOW);      // select 0b00 = RC controlled
     digitalWrite(bMUX, LOW);  // read sensor values
   }  
-  if((lleft==HIGH)&&(rright==HIGH)){     
+  if((lleft==HIGH)&&(middle==HIGH)&&(rright==LOW)) {
+    digitalWrite(lightWhite, HIGH);   
+    digitalWrite(aMUX, LOW);      // select 0b10 = go straight
+    digitalWrite(bMUX, HIGH);
+  }  
+  if((lleft==LOW)&&(middle==HIGH)&&(rright==HIGH)) {
+    digitalWrite(lightWhite, HIGH);   
+    digitalWrite(aMUX, LOW);      // select 0b10 = go straight
+    digitalWrite(bMUX, HIGH);
+  }  
+  if((lleft==HIGH)&&(middle==LOW)&&(rright==HIGH)) {
+    digitalWrite(lightWhite, HIGH);   
+    digitalWrite(aMUX, LOW);      // select 0b10 = go straight
+    digitalWrite(bMUX, HIGH);
+  }  
+  if((lleft==HIGH)&&(middle==HIGH)&&(rright==HIGH)){   
+    digitalWrite(lightWhite, HIGH);   
     digitalWrite(aMUX, LOW);      // select 0b10 = go straight
     digitalWrite(bMUX, HIGH);
   }
