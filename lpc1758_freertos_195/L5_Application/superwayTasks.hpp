@@ -18,8 +18,9 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
-
+#include "superwaySPI.hpp"
 #include "SNAP.H"
+
 
 
 #define QDelay 100
@@ -234,8 +235,11 @@ void StateMachine(void *p)
     //Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
     PRT_States current= startup, next;
     podStatus pod;
+
+    /*Initializes SPI (SSP) for comm with Arduino*/
+
+
     //int speedChange;
-    //TODO setup SPI for arduino comms, need to test with other project first.
     //TODO initialize structs to be used with inter-task comms.
     //TODO initialize memory, if any is used
     //int errorCounter=0;
