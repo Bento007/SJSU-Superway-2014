@@ -41,27 +41,61 @@ def startupEvent():     #Status: Done, Tested
     stdinMode(0, False)
     flowControl(1, False, True) # <= set flow control to True or False as needed
     crossConnect(DS_UART1, DS_STDIO)#connect uart1 to STDIO
-    crossConnect(DS_UART1, DS_TRANSPARENT)#connect uart1 to wireless
-    while not getActive():
-        register()
-        
+    #crossConnect(DS_UART1, DS_TRANSPARENT)#connect uart1 to wireless
+    register()
 @setHook(HOOK_STDIN)
 def stdinEvent(buf):    #Status: Done, not tested
     """Receive handler for character input from SJONE to SNAP.
        The parameter 'buf' will contain one or more 
        received characters."""
-    COM(buf[0],buf[1:])
+    n = len(buf)
+    cmd = buf[0]
+    param = 0
+    i = 1
+    j = 1
+    while(i < n):
+        c = buf[i]
+        i += 1
+        if c == ',':
+            if param == 0:
+                temp0 = buf[j:i-1]
+            elif param == 1:
+                temp1 = buf[j:i-1]
+            elif param == 2:
+                temp2 = buf[j:i-1]
+            elif param == 3:
+                temp3 = buf[j:i-1]
+            j=i
+            param +=1
+                      #Desc        CMD    Target Address
+    if cmd == 'U':    #get update  U
+        setLocals(temp0, temp1,temp2, temp3) 
+    elif cmd == 'M':  #merge       M
+        setETM(temp0)
+        merge()
+    elif cmd == 'E':  #help        E    multicasted
+        setStatus(temp0,temp1)
+        emergency()
+    elif cmd == 'D':
+        getDest()
+    elif cmd == 'X':
+        rpc(PORTAL_ADDR,'getTimeRPC')
+    elif cmd =='T':
+        test()
+    elif cmd =='P':
+        print buf[1:n]
 
 @setHook(HOOK_STDOUT)
 def printed():          #Status: not done, not tested
     pass
-#@setHook(HOOK_1S)
+@setHook(HOOK_1S)
 def hook_1s():          #Status: Done, not tested
     """Every second broad cast hello
     share your address and basic info
     with other nodes so they can find 
     you.
     """
+    #register()
     pass
 #@setHook(HOOK_10MS)
 def hook_10ms():
