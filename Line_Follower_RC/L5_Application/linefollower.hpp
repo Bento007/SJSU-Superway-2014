@@ -53,63 +53,22 @@
 #include <printf_lib.h>
 #include "LED_Display.hpp"
 
-int timer1;
-int timer2;
-int timer3;
-int timer4;
+int lleft = 20;
+int middle = 23;
+int rright = 29;
 
-int deltaleft;
-int deltaright;
-float notchDistance = 12;	// 12mm
-int speed;
-void timers();
+#define lleftSensor 	~(LPC_GPIO1->FIOPIN&(1<<lleft))
+#define middleSensor 	~(LPC_GPIO1->FIOPIN&(1<<middle))
+#define rrightSensor 	~(LPC_GPIO1->FIOPIN&(1<<rright))
+
 void init(){
-	//	LPC_PINCON->PINSEL4 &= ~(0xf);
-	//    LPC_PINCON->PINSEL4 |= (5);						// enable PWM1.1 and PWM1.2
-		int speed=6;
-	    LPC_SC->PCLKSEL0 &= ~(3<<12);
-	    LPC_SC->PCLKSEL0 |= (1<<13);					// set CLK/1
-	    // pin 2.6
-	    LPC_GPIO2->FIODIR &= ~(1<<speed);					// speed input
+	LPC_SC->PCLKSEL0 &= ~(3<<12);
+	LPC_SC->PCLKSEL0 |= (1<<13);					// set CLK/1
 
-	    // sensor pins as input
-	    int lleft = 20;
-	    int left = 22;
-	    int middle = 23;
-	    int right = 28;
-	    int rright = 29;
-	    LPC_GPIO1->FIODIR &= ~(1 << lleft);				  // lleft sensor input
-	    LPC_GPIO1->FIODIR &= ~(1 << left);				  // left sensor input
-	    LPC_GPIO1->FIODIR &= ~(1 << middle);				  // middle sensor input
-	    LPC_GPIO1->FIODIR &= ~(1 << right);				  // right sensor input
-	    LPC_GPIO1->FIODIR &= ~(1 << rright);				  // rright sensor input
-	    LPC_GPIO0->FIODIR |= (1<<0);						// output to LCD
-
-		if(SW.getSwitch(0)){
-			LPC_GPIO0->FIOSET = (1<<0);
-		}
+	LPC_GPIO1->FIODIR &= ~(1 << lleft);				  // lleft sensor input
+	LPC_GPIO1->FIODIR &= ~(1 << middle);				  // middle sensor input
+	LPC_GPIO1->FIODIR &= ~(1 << rright);				  // rright sensor input
 }
-
-
-void left()
-{
-	timer2 = sys_get_high_res_timer_us();
-	deltaleft = timer2 - timer1;
-	printf("deltaleft = %i  \n", deltaleft);
-//	printf("%f", (notchDistance/delta));
-
-	timer1 = sys_get_high_res_timer_us();
-
-}
-void right()
-{
-	timer3 = sys_get_high_res_timer_us();
-	deltaright = timer3 - timer4;
-	printf("     deltaright = %i  \n", deltaright);
-//	printf("\n%f", (notchDistance/delta));
-	timer4 = sys_get_high_res_timer_us();
-}
-
 
 int run(void)
 {
@@ -119,40 +78,26 @@ int run(void)
     int go = 50;		/// PWM cannot go above 100
     int stop = 0;
 
-	////////// * interrupt stuff   *//
-	void (*leftptr)();
-	void (*rightptr)();
-	leftptr = left;
-	rightptr = right;
-	int leftspeed = 6;
-	int rightspeed = 7;
-	////////////* end interrupt stuff *//
-
-	eint3_enable_port2( leftspeed, eint_rising_edge , *leftptr);
-	eint3_enable_port2( rightspeed, eint_rising_edge , *rightptr);
-
     while(1){
 		leftmotor.set(go);
 		rightmotor.set(go);
 
-//    	if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
-
-//    	if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-//        	leftmotor.set(go);
-//        	rightmotor.set(go);
-//    		printf("go straight");
-//    	}
-//		else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
+    	if (lleftSensor && rrightSensor){
+        	leftmotor.set(go);
+        	rightmotor.set(go);
+    		printf("go straight");
+    	}
+//		if (lleftSensor && middleSensor && rrightSensor){
 //	    	leftmotor.set(stop);
 //	    	rightmotor.set(stop);
 //			printf("motor stop\n");
 //		}
-//    	else if(!(LPC_GPIO1->FIOPIN & (1 << left))){		// if left sensor hits line
-//        	leftmotor.set(stop);
-//        	rightmotor.set(go);
-//			printf("go right\n");
-//		}
-//		else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
+    	if (lleftSensor &&  !rrightSensor){
+        	leftmotor.set(stop);
+        	rightmotor.set(go);
+			printf("go right\n");
+		}
+//		if (!(LPC_GPIO1->FIOPIN & (1 << right))){
 //	    	leftmotor.set(go);
 //	    	rightmotor.set(stop);
 //			printf("go left\n");
@@ -160,21 +105,6 @@ int run(void)
     }
     return -1;
 }
-
-
-void timers()
-{
-    /* You can compute time delta in microseconds too */
-    uint64_t timer_micro_sec = sys_get_high_res_timer_us();
-    delay_ms(2000);
-    //uint64_t delta = sys_get_high_res_timer_us() - timer_micro_sec;
-
-    printf("\n%i", sys_get_high_res_timer_us());
-
-
-}
-
-
 
 
 #endif /* LINEFOLLOWER_HPP_ */
