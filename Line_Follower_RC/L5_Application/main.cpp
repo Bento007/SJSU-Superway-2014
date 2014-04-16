@@ -37,11 +37,16 @@
 #include "../L2_Drivers/eint.h"
 #include <printf_lib.h>
 #include "LED_Display.hpp"
-#include "linefollower.hpp"
+//#include "linefollower.hpp"
+#include "SmartLineFollower.hpp"
 
 int main(void)
 {
-//	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
+	instructions = xQueueCreate(10, sizeof(int));
+	// 0-stops, 1-forward, 2- turn
+	// 1,
+
+	//	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
 	scheduler_add_task(new sensorMotorTask(PRIORITY_MEDIUM));
 
     scheduler_start(true); ///< This shouldn't return
