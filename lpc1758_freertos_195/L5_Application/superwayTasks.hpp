@@ -19,6 +19,7 @@
 #include "queue.h"
 #include "task.h"
 #include "superwaySPI.hpp"
+#include "dijkstra.hpp"
 #include "SNAP.H"
 
 
@@ -39,7 +40,7 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
                 SMtoLineFollower,   //State machine -> Line follower
                 lineFollowertoSM,   //Line follower -> State Machine
                 SMtoPath,           //State machine -> Pathing (djikstra)
-                directions;         //Pathing (djikstra) -> State machine
+                directionQ;         //Pathing (djikstra) -> State machine
 //TODO: check if more queues are needed
 
 /**********************************
@@ -122,8 +123,43 @@ void pathingTask(void *p)
 //         -New map weights. Routes may be inaccessible now.
 //
 //    To State machine, will send:
-//         -List of directions via the directions queue. Can be array with
+//         -List of directions via the directionQ queue. Can be array with
 //          instructions for each "node"
+
+path initPath;
+
+   while(1)
+   {
+       int size = 15;
+       int array[size];
+       int send = 50;
+       bool done = false;
+       bool start = true;
+       if(xQueueReceive(SMtoPath, &initPath, 100)){
+           dijkstra *mainGraph = new dijkstra;
+           makeGraph(mainGraph);
+           dijkstraFunc(mainGraph, initPath.source);
+
+           int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
+//            printf("Got the array!\n");
+           int i=0;
+           while(!done)
+           {
+               send = directions[i];
+
+               if(!start && send == 0){
+                   xQueueSend(directionQ, &send,0);
+                   done = true;
+                   break;
+               }
+
+               xQueueSend(directionQ, &send, 10);
+               start = false;
+               i++;
+           }
+           printf("\n\n");
+       }
+   }
 }
 
 /************************************
@@ -235,6 +271,8 @@ void StateMachine(void *p)
     //Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
     PRT_States current= startup, next;
     podStatus pod;
+    int array[11], receive;
+    uint8_t send;
 
     /*Initializes SPI (SSP) for comm with Arduino*/
 
@@ -270,6 +308,28 @@ void StateMachine(void *p)
                 //Send/Receive from SNAP a comm check
                 //Send/Receive a command to djikstra task, verify its alive.
                 //errorCounter++;
+                if(xQueueReceive(directionQ, &receive, 10))
+                {
+                    int i =0;
+        //            ssp1_ExchangeByte(0x55); //ready
+                    do{
+        //                LPC_GPIO0->FIODIR |= (1 << 30);  //set as output
+        //                LPC_GPIO0->FIOSET = (1 << 30);   //initially as high
+        //                LPC_GPIO0->FIOCLR = (1 << 30);   //drive low to CS
+                        array[i] = receive;
+                        printf("received: %i\n", receive);
+                        send = array[i];
+        //                ssp1_ExchangeByte(send); // send to arduino
+        //                ssp1_ExchangeByte(0x00);
+        //                acked = ssp1_ExchangeByte(0x00);
+
+        //                if(acked== 0x10)
+        //                    printf("acked %x\n", acked);
+                        i++;
+        //                LPC_GPIO0->FIOSET = (1 << 30);  //slave select goes High.
+        //                delay_ms(50);
+                    }while(xQueueReceive(directionQ, &receive, 10));
+                }
                 break;
 
             case ready:
