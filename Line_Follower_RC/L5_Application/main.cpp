@@ -45,7 +45,8 @@ int main(void)
 	instructions = xQueueCreate(10, sizeof(int));
 	// 0-stops, 1-forward, 2- turn
 	// 1,
-
+	setup();
+	loop();
 	//	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
 	scheduler_add_task(new sensorMotorTask(PRIORITY_MEDIUM));
 
