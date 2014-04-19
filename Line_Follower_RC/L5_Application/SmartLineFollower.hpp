@@ -19,8 +19,8 @@
 #include "queue.h"
 
 // PIN MAP //
-#define leftmotor 6			// PORT 2
-#define rightmotor 7
+#define leftmotor 0			// PORT 2
+#define rightmotor 1
 #define aMUX 29				// PORT 0
 #define bMUX 30
 #define lleftsensor 29      // PORT 1
@@ -28,6 +28,15 @@
 #define middlesensor 23
 #define rightsensor 22
 #define rrightsensor 20
+
+void turnRight();
+void loop();
+void station();
+void straight();
+void RCmode();
+void SWmode();
+void setLeftMotor(bool set);
+void setRightMotor(bool set);
 
 bool getRRight(void)
 {
@@ -49,12 +58,6 @@ bool getLLeft(void)
 {
 	return !!(LPC_GPIO1->FIOPIN & (1 << lleftsensor));
 }
-
-void turnRight();
-void loop();
-void station();
-void straight();
-void RCmode();
 
 xQueueHandle instructions;
 
@@ -86,19 +89,21 @@ void loop() {    // all sensors are active low
   int command=1;
   int pop;
   while(1){
-	  xQueueSend(instructions, &command, 500);
+	  //xQueueSend(instructions, &command, 500);
 	  RCmode();
-	  xQueueReceive(instructions, &pop, 500);
+	 // xQueueReceive(instructions, &pop, 500);
 
-	  if(pop==2){
-		turnRight();
-	  }
-	  if(pop==1){
-		straight();
-	  }
-	  if(pop==0){
-		station();
-	  }
+	  straight();
+
+//	  if(pop==2){
+//		turnRight();
+//	  }
+//	  if(pop==1){
+//		straight();
+//	  }
+//	  if(pop==0){
+//		station();
+//	  }
   }
 }
 
@@ -121,7 +126,8 @@ void straight(){                // not 100% sure this is correct
 	bool exit=true;
 	while(exit)
 	{
-		if((!getLeft()&&!getRight())||(!getLLeft()&&!getLeft()&&!getRight())||(!getLLeft()&&!getRight()&&!getRRight()))
+		printf("lleft=%i  left=%i  middle=%i  right=%i  rright=%i\n",!getLLeft(),!getLeft(),!getMiddle(),!getRight(),!getRRight());
+		if((!getLeft()&&!getRight())||(!getLLeft()&&!getLeft()&&!getRRight())||(!getLLeft()&&!getRight()&&!getRRight()))
 		{
 			exit=false;
 		}
@@ -137,18 +143,53 @@ void station(){
 }
 
 void RCmode(){
-	LD.setNumber(3);
-	LPC_GPIO0->FIOCLR = (1 << aMUX);			// 0b00 = RC mode
-	LPC_GPIO0->FIOCLR = (1 << bMUX);
 	bool exit=true;
 	while(exit){
-		printf("lleft=%i  left=%i  middle=%i  right=%i  rright=%i\n",getLLeft(),getLeft(),getMiddle(),getRight(),getRRight());
-		if(!getLLeft()&&!getRRight()){
+		LD.setNumber(3);
+		LPC_GPIO0->FIOCLR = (1 << aMUX);			// 0b00 = RC mode
+		LPC_GPIO0->FIOCLR = (1 << bMUX);
+		if(getLLeft()&&getRRight()){
 			exit=false;
 		}
-		delay_ms(100);
+		if(!getLLeft()&&getLeft()&&!getMiddle()&&getRight()&&!getRRight()){
+			SWmode();
+		}
 	}
 }
+
+void SWmode(){
+//	setLeftMotor(false);
+//	setRightMotor(true);
+	LD.setNumber(4);
+	LPC_GPIO2->FIOCLR = (1 << leftmotor);
+	LPC_GPIO2->FIOSET = (1 << rightmotor);
+
+	// choose 0b01 = software mode
+	LPC_GPIO0->FIOSET = (1 << aMUX);
+	LPC_GPIO0->FIOCLR = (1 << bMUX);
+	delay_ms(100);
+
+}
+
+//void setLeftMotor(bool set)
+//{
+//	if(set==false){
+//		LPC_GPIO2->FIOCLR = (1 << leftmotor);
+//	}
+//	if(set==true){
+//		LPC_GPIO2->FIOSET = (1 << leftmotor);
+//	}
+//}
+//
+//void setRightMotor(bool set)
+//{
+//	if(set==false){
+//		LPC_GPIO2->FIOCLR = (1 << rightmotor);
+//	}
+//	if(set==true){
+//		LPC_GPIO2->FIOSET = (1 << rightmotor);
+//	}
+//}
 
 
 #endif /* SMARTLINEFOLLOWER_HPP_ */
