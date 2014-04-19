@@ -44,6 +44,10 @@ class SNAP
 
         void setup_Time();     //cmd -> 'X' get the system time from network through snap **Caution This function flushes the current RX buffer**
 
+        bool recentlyActive(uint32_t ms);
+        bool RXempty(); //checks if rx is empty
+
+
 //        //private member setters
 //        void setStatus(uint8_t input){status = input;};
 //        void setSpeed(uint32_t input){speed = input;};
