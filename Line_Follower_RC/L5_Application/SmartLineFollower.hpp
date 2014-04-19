@@ -16,8 +16,6 @@
 #include <sys_config.h>
 #include "lpc_sys.h"
 #include "io.hpp"
-//  #include <StackArray.h> find replacement
-
 #include "queue.h"
 
 // PIN MAP //
@@ -25,34 +23,40 @@
 #define rightmotor 7
 #define aMUX 29				// PORT 0
 #define bMUX 30
-#define lleftsensor 29    //  very left sensor  // PORT 1
+#define lleftsensor 29      // PORT 1
 #define leftsensor 28
 #define middlesensor 23
 #define rightsensor 22
-#define rrightsensor 20    //  very right sensor
-#define lleft LPC_GPIO1->FIOPIN&(1<<lleftsensor)
-#define left LPC_GPIO1->FIOPIN&(1<<leftsensor)
-#define right LPC_GPIO1->FIOPIN&(1<<rightsensor)
-#define rright LPC_GPIO1->FIOPIN&(1<<rrightsensor)
+#define rrightsensor 20
 
-// VARIABLES //
-int middle=0;
-int locationCounter = 0;
-int pwmgo = 255;
-int pwmslow = 200;
-int pwmstop = 0;
-int lightWhite=5;	// PORT 2
-int lightGreen=4;
-int lightYellow=3;
-// StackArray <int> stack; create stack
-int pop;
+bool getRRight(void)
+{
+	return !!(LPC_GPIO1->FIOPIN & (1 << rrightsensor));
+}
+bool getRight(void)
+{
+	return !!(LPC_GPIO1->FIOPIN & (1 << rightsensor));
+}
+bool getMiddle(void)
+{
+	return !!(LPC_GPIO1->FIOPIN & (1 << middlesensor));
+}
+bool getLeft(void)
+{
+	return !!(LPC_GPIO1->FIOPIN & (1 << leftsensor));
+}
+bool getLLeft(void)
+{
+	return !!(LPC_GPIO1->FIOPIN & (1 << lleftsensor));
+}
 
-xQueueHandle instructions;
 void turnRight();
 void loop();
 void station();
 void straight();
 void RCmode();
+
+xQueueHandle instructions;
 
 void setup() {
 
@@ -71,24 +75,16 @@ void setup() {
 	LPC_GPIO2->FIODIR |= (1 << rightmotor);
 	LPC_GPIO0->FIODIR |= (1 << aMUX);
 	LPC_GPIO0->FIODIR |= (1 << bMUX);
-	LPC_GPIO2->FIODIR |= (1 << lightWhite);
-	LPC_GPIO2->FIODIR |= (1 << lightGreen);
-	LPC_GPIO2->FIODIR |= (1 << lightYellow);
-
 
   // 2 = turn right
   // 1 = straight
   // 0 = station
-
-	// stacks
-	int queue=1;
-	xQueueSend(instructions, &queue, portMAX_DELAY);
 }
 
 void loop() {    // all sensors are active low
-  // LOW = white
-  // HIGH = black
+  // LOW = white    HIGH = black
   int command=1;
+  int pop;
   while(1){
 	  xQueueSend(instructions, &command, 500);
 	  RCmode();
@@ -112,8 +108,7 @@ void turnRight(){
 	while(exit){
 		LPC_GPIO0->FIOSET = (1 << aMUX);	// 0b11 = go straight
 		LPC_GPIO0->FIOSET = (1 << bMUX);
-		//   lleft = digitalRead(lleftsensor);
-		if(!(LPC_GPIO1->FIOPIN & (1 << lleftsensor))){
+		if(!getLeft()){
 			exit=false;
 		}
 	}
@@ -124,12 +119,13 @@ void straight(){                // not 100% sure this is correct
 	LPC_GPIO0->FIOCLR = (1 << aMUX);		// 0b10 = turn right
 	LPC_GPIO0->FIOSET = (1 << bMUX);
 	bool exit=true;
-	while(exit){
-		if(((!left)&&(!right))||((!lleft)&&(!left)&&(!right))||((!lleft)&&(!right)&&(!rright))){
+	while(exit)
+	{
+		if((!getLeft()&&!getRight())||(!getLLeft()&&!getLeft()&&!getRight())||(!getLLeft()&&!getRight()&&!getRRight()))
+		{
 			exit=false;
 		}
 	}
-	LPC_GPIO2->FIOCLR = (1 << lightGreen);
 }
 
 void station(){
@@ -142,22 +138,16 @@ void station(){
 
 void RCmode(){
 	LD.setNumber(3);
-	LPC_GPIO2->FIOSET = (1 << lightWhite);		// turn on Blue light
 	LPC_GPIO0->FIOCLR = (1 << aMUX);			// 0b00 = RC mode
 	LPC_GPIO0->FIOCLR = (1 << bMUX);
 	bool exit=true;
 	while(exit){
-//		lleft = LPC_GPIO1->FIOPIN & (1 << lleftsensor);
-////		left = LPC_GPIO1->FIOPIN & (1 << leftsensor);
-////		middle = LPC_GPIO1->FIOPIN & (1 << middlesensor);
-////		right =  LPC_GPIO1->FIOPIN & (1 << rightsensor);
-//		rright = LPC_GPIO1->FIOPIN & (1 << rrightsensor);
-		if((LPC_GPIO1->FIOPIN&(1<<lleftsensor))&&(LPC_GPIO1->FIOPIN&(1<<rrightsensor))){
+		printf("lleft=%i  left=%i  middle=%i  right=%i  rright=%i\n",getLLeft(),getLeft(),getMiddle(),getRight(),getRRight());
+		if(!getLLeft()&&!getRRight()){
 			exit=false;
 		}
 		delay_ms(100);
 	}
-	LPC_GPIO2->FIOCLR = (1 << lightWhite);		// turn off Blue light
 }
 
 
