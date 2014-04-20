@@ -86,24 +86,29 @@ void setup() {
 
 void loop() {    // all sensors are active low
   // LOW = white    HIGH = black
-  int command=1;
+  int goright=2;
+  int gostraight=1;
+  int gostation=0;
   int pop;
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &goright, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &goright, 500);
+  xQueueSend(instructions, &gostation, 500);
   while(1){
-	  //xQueueSend(instructions, &command, 500);
 	  RCmode();
-	 // xQueueReceive(instructions, &pop, 500);
+	  xQueueReceive(instructions, &pop, 500);
 
-	  straight();
-
-//	  if(pop==2){
-//		turnRight();
-//	  }
-//	  if(pop==1){
-//		straight();
-//	  }
-//	  if(pop==0){
-//		station();
-//	  }
+	  if(pop==2){
+		turnRight();
+	  }
+	  if(pop==1){
+		straight();
+	  }
+	  if(pop==0){
+		station();
+	  }
   }
 }
 
