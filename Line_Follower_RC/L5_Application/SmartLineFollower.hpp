@@ -90,13 +90,14 @@ void loop() {    // all sensors are active low
   int gostraight=1;
   int gostation=0;
   int pop;
-  xQueueSend(instructions, &gostraight, 500);
-  xQueueSend(instructions, &goright, 500);
-  xQueueSend(instructions, &gostraight, 500);
-  xQueueSend(instructions, &gostraight, 500);
-  xQueueSend(instructions, &goright, 500);
-  xQueueSend(instructions, &gostation, 500);
+//  xQueueSend(instructions, &gostraight, 500);
+//  xQueueSend(instructions, &goright, 500);
+//  xQueueSend(instructions, &gostraight, 500);
+//  xQueueSend(instructions, &gostraight, 500);
+//  xQueueSend(instructions, &goright, 500);
+//  xQueueSend(instructions, &gostation, 500);
   while(1){
+	  xQueueSend(instructions, &gostraight, 500);
 	  RCmode();
 	  xQueueReceive(instructions, &pop, 500);
 
