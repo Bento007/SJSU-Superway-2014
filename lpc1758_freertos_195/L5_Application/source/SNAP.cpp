@@ -173,7 +173,7 @@ int SNAP::get_Merge()    //get the new time to merge
 /* This updates the time from the server
  * and sets the local RTC.
  * */
-void SNAP::get_Time()//TODO
+void SNAP::setup_Time()//TODO
 {
     rtc_t update;
     Uart3& wireless = Uart3::getInstance();
