@@ -15,13 +15,13 @@
 #include "task.h"
 #include "rtc.h"
 #include "uart3.hpp"
-//#include "utilities.h"
-//#include <stdio.h>
+#include "utilities.h"
+#include <stdio.h>
 
 //TODO if status says pod is free send it a new destination base on it's current location
 
 //SNAP::SNAP(uint8_t priority):scheduler_task("wireless", 512, priority, NULL)//for scheduler
-SNAP::SNAP(): status(0),speed(0),ticks(0),location(0), destination(0),mLastActivityTime(0)
+SNAP::SNAP(): status(0),speed(0),ticks(0),location(0), destination(0),mLastActivityTime(0),started(false)
 {
    //add semaphore
 //   Uart3& wireless = Uart3::getInstance();
@@ -42,8 +42,13 @@ SNAP::SNAP(): status(0),speed(0),ticks(0),location(0), destination(0),mLastActiv
 
 bool SNAP::init()
 {
-    Uart3& wireless = Uart3::getInstance();
-    wireless.init(19200,32,32);
+    if(!started)
+    {
+        Uart3& wireless = Uart3::getInstance();
+        wireless.init(19200,32,32);
+        rtc_init (); //initialize RTC
+        started = true;
+    }
     return true;
 }
 bool SNAP::send_Update()
@@ -84,13 +89,16 @@ bool SNAP::send_Merge()
 //    else
 //        return false;
 }
-bool SNAP::send_Help(uint8_t status, uint32_t location )  //sends help to SNAP
+bool SNAP::send_Help(uint8_t stat, uint32_t loca )  //sends help to SNAP
 {
     Uart3& wireless = Uart3::getInstance();
+    status = stat;
+    location = loca;
+
     if(wireless.printf("E%i,%i",status,location))
         return true;
     else
-        return false;;
+        return false;
 }
 char SNAP::get_nextCMD()
 {
@@ -163,6 +171,7 @@ void SNAP::setup_Time()
     wireless.flush();
     wireless.printf("X\n",500);
     wireless.getChar(&flag,100);
+//    printf("break1\n");
     while(flag != 'X')
     {
         wireless.getChar(&flag,100);
@@ -172,9 +181,13 @@ void SNAP::setup_Time()
             counter = 0;
             wireless.printf("X\n",500);
             wireless.getChar(&flag,100);
+//            printf("break4\n");
         }
+//        printf("break2 %c\n", flag);
     }
-    vTaskDelay(10);//TODO: change to vtask delay or find better solution
+//    printf("break3\n");
+//    vTaskDelay(10);//TODO: change to vtask delay or find better solution
+    delay_ms(10);
 
     wireless.scanf("%i %i %i %i %i %i %i %i",&ty,&tm,&td,&th,
             &tmi,&ts,&tdw,&tdy);

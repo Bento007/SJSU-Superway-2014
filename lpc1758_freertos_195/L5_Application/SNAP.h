@@ -19,7 +19,7 @@
 #include "singleton_template.hpp"  // Singleton Template
 
 //class SNAP : public scheduler_task    //for scheduler
-class SNAP : public SingletonTemplate<SNAP>
+class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data is received
 {
     public:
         /**
@@ -34,7 +34,7 @@ class SNAP : public SingletonTemplate<SNAP>
  */
 
         bool send_Update();     //cmd -> 'U'updates the locals on the snap
-        bool send_Estimated_Time_to_Merge(uint32_t speed, int ticks);  //cmd -> 'M'sends the estimated time to merge to the SNAP
+//        bool send_Estimated_Time_to_Merge(uint32_t speed, int ticks);  //cmd -> 'M'sends the estimated time to merge to the SNAP
         bool send_Merge();//cmd -> 'M' sends a merge command to SNAP
         bool send_Help(uint8_t status, uint32_t location );                         //cmd -> 'E' sends help to SNAP
         bool send_Test();            //tests that the snap is working
@@ -70,6 +70,7 @@ class SNAP : public SingletonTemplate<SNAP>
         uint32_t ticks;
         uint32_t location;
         uint32_t destination;
+        bool started;
         TickType_t mLastActivityTime;   ///< updated each time an update is sent
 };
 
