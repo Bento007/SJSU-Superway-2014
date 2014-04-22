@@ -120,6 +120,7 @@ class UartDev : public CharDev
         inline void resetActivity(void) { mLastActivityTime = xTaskGetMsCount(); }
         /** @} */
 
+        inline unsigned int peekRxQueue() const { char data; return xQueuePeek(mRxQueue,&data,portMAX_DELAY);}
         /**
          * When the UART interrupt occurs, this function should be called to handle
          * future action to take due to the interrupt cause.
