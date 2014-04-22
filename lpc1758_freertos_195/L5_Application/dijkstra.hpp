@@ -11,6 +11,7 @@
 #include <queue>
 #include <stack>
 #include <iostream>
+#include "shared_queues.hpp"
 
 using namespace std;
 
@@ -43,6 +44,8 @@ struct dijkstra
     void makeGraph(struct dijkstra*);
     void dijkstraFunc(struct dijkstra*, int);
     int* print(struct dijkstra*, int, int, int, int);
+    void dijkstraFunction(path);
+
 
 
 void makeGraph(struct dijkstra* graph)
@@ -382,5 +385,36 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
      return arrayDir;
 }
 
+void dijkstraFunction(path initPath){
+//    path initPath;
+    int size = 15;
+    int array[size];
+    int send = 50;
+    bool done = false;
+    bool start = true;
+
+    dijkstra *mainGraph = new dijkstra;
+    makeGraph(mainGraph);
+    dijkstraFunc(mainGraph, initPath.source);
+
+    int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
+    int i=0;
+
+    while(!done)
+    {
+        send = directions[i];
+
+        if(!start && send == 0){
+            xQueueSend(pathToSM, &send,0);
+            done = true;
+            break;
+        }
+
+        xQueueSend(pathToSM, &send, 10);
+        start = false;
+        i++;
+    }
+    printf("\n\n");
+}
 
 #endif /* DIJKSTRA_HPP_ */
