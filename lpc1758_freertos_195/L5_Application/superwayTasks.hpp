@@ -21,6 +21,7 @@
 #include "superwaySPI.hpp"
 #include "dijkstra.hpp"
 #include "SNAP.H"
+#include "io.hpp"
 
 
 
@@ -53,34 +54,37 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
  *********************************/
  void wirelessTask(void *p)
  {
-     SNAP me;
+     SNAP& wireless = SNAP::getInstance();
 //     podStatus pod;
      uint32_t temp1,temp2;
      while(1)
      {
          temp1 = 0;
          temp2 = 0;
-         switch(me.get_CMD())
+         if(!wireless.RXempty())
          {
-             case 'U'://get a graph update and send it to pathing
-                 me.get_Update(&temp1, &temp2);
-                 //TODO: add shared queue to send to pathing
-                 break;
-             case 'M'://tell stateMachineTask to change speed for merge
-                 temp1 = me.get_Merge();
-                 //TODO: add shared queue to send to statemachine
-                 break;
-             case 'E'://give pathingTask a graph update
-                 temp1 = me.get_Help();
-                 //TODO: add shared queue to send to pathing
-                 break;
-             case 'D'://give pathingTask new destination
-                 //TODO: add shared queue to send to pathing
-                 temp1 = me.get_Dest();
-                 break;
-             default://send to SNAP invalid CMD
-                 break;
+             switch(wireless.get_nextCMD())
+             {
+                 case 'U'://get a graph update and send it to pathing
+                     wireless.get_TrackUpdate(&temp1, &temp2);
+                     //TODO: add shared queue to send to pathing
+                     break;
+                 case 'M'://tell stateMachineTask to change speed for merge
+                     temp1 = wireless.get_Merge();
+                     //TODO: add shared queue to send to statemachine
+                     break;
+                 case 'E'://give pathingTask a graph update
+                     temp1 = wireless.get_Help();
+                     //TODO: add shared queue to send to pathing
+                     break;
+                 case 'D'://give pathingTask new destination
+                     //TODO: add shared queue to send to pathing
+                     temp1 = wireless.get_newDest(&temp1);
+                     break;
+                 default://send to SNAP invalid CMD
+                     break;
 
+             }
          }
      //     if(xQueueReceive(SMtoWireless, &pod, 100));
      //     Info was requested by a SNAP so send: the pod's speed, location, and name.
@@ -126,7 +130,7 @@ void pathingTask(void *p)
 //         -List of directions via the directionQ queue. Can be array with
 //          instructions for each "node"
 
-path initPath;
+    path initPath;
 
    while(1)
    {
@@ -268,7 +272,7 @@ typedef struct{
 void StateMachine(void *p)
 {
     /*initialize variables here*/
-    //Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
+//    Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
     PRT_States current= startup, next;
     podStatus pod;
     int array[11], receive;
@@ -276,6 +280,8 @@ void StateMachine(void *p)
 
     /*Initializes SPI (SSP) for comm with Arduino*/
 
+    /*One time functions*/
+    LD.setNumber(0);
 
     //int speedChange;
     //TODO initialize structs to be used with inter-task comms.
@@ -284,6 +290,8 @@ void StateMachine(void *p)
     /*begin state machine*/
     while(1)
     {
+        /*reset these values at the beginning of each loop
+         * to prevent accidently reuse */
 
 //        To send from SM to line follower just do the following.
 //        if(!xQueueSend(directives, &command, 100))
@@ -295,7 +303,7 @@ void StateMachine(void *p)
 
         switch(current)
         {
-            case startup:
+            case startup:   LD.setNumber(1);
                 /* check for values that didn't initialize, and test hardware
                  * if(everything good)
                  *  next = ready
@@ -332,7 +340,7 @@ void StateMachine(void *p)
                 }
                 break;
 
-            case ready:
+            case ready: LD.setNumber(2);
                 /* if(next direction == NULL)
                  * --nextState
                  * else
@@ -346,14 +354,14 @@ void StateMachine(void *p)
                 //next = pickup;
                 break;
 
-            case error:
+            case error: LD.setLeftDigit('A');
 //                errorCounter =0;
                 //send error status to the snap/computer
                 //save error info
                 //send stop command to pod
                 break;
 
-            case roam:
+            case roam:  LD.setNumber(3);
                 //Traveling mode
 
                 //busy bit unset, means available.
@@ -361,7 +369,7 @@ void StateMachine(void *p)
                 //--run around for fun
                 break;
 
-            case pickup:
+            case pickup:    LD.setNumber(4);
                 //Traveling mode
 
                 //have we reached station for pickup?
@@ -371,9 +379,9 @@ void StateMachine(void *p)
                 //next = pickup;
                 break;
 
-            case load:
+            case load:  LD.setNumber(5);
                 //Waiting mode:
-
+                //PUSH A BUTTON TO INDICATE LOADED
                 //same as unload basically.
                 //TODO:am i loaded?
                 //if so
@@ -383,7 +391,7 @@ void StateMachine(void *p)
                 //next = load
                 break;
 
-            case dropoff:
+            case dropoff:   LD.setNumber(6);
                 //Traveling mode
                 //busy bit set, same as pickup basically.
                 //reached correct destination?
@@ -393,15 +401,16 @@ void StateMachine(void *p)
                 //next = dropoff
                 break;
 
-            case unload:
+            case unload:    LD.setNumber(7);
                 //Waiting mode
                 //To simulate unloading, send stop to line follower
                 //delay a couple miliseconds to simulate.
                 //next = ready
                 break;
-
+            default:
+                next = error;
+                break;
         }
-
         current = next;// store the next state
     }
 
