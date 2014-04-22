@@ -35,7 +35,7 @@ class SNAP : public SingletonTemplate<SNAP>
 
         bool send_Update();     //cmd -> 'U'updates the locals on the snap
         bool send_Estimated_Time_to_Merge(uint32_t speed, int ticks);  //cmd -> 'M'sends the estimated time to merge to the SNAP
-        bool send_Merge(uint32_t location,uint8_t status,uint32_t speed, uint32_t ticks);//cmd -> 'M' sends a merge command to SNAP
+        bool send_Merge();//cmd -> 'M' sends a merge command to SNAP
         bool send_Help(uint8_t status, uint32_t location );                         //cmd -> 'E' sends help to SNAP
         bool send_Test();            //tests that the snap is working
         void send_Time();   //X<-cmd, R->cmd sends current RTC
@@ -48,13 +48,13 @@ class SNAP : public SingletonTemplate<SNAP>
 
         void setup_Time();     //cmd -> 'X' get the system time from network through snap **Caution This function flushes the current RX buffer**
 
-        bool recentlyActive(uint32_t ms);
+//        bool recentlyActive(uint32_t ms);
         bool RXempty(); //checks if rx is empty
 		void update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, int tic);
 
-        inline TickType_t getLastActivityTime(void) const { return mLastActivityTime; }
-        inline void resetActivity(void) { mLastActivityTime = xTaskGetMsCount(); }
-        bool recentlyActive(unsigned int ms) const
+        inline TickType_t getLastUpdateTime(void) const { return mLastActivityTime; }
+        inline void resetUpdateTime(void) { mLastActivityTime = xTaskGetMsCount(); }
+        bool recentlyUpdated(unsigned int ms) const
         {
             TickType_t lastTimeStampMs = MS_PER_TICK() * mLastActivityTime;
             TickType_t currentTimeMs = xTaskGetMsCount();

@@ -18,7 +18,7 @@
 //#include "utilities.h"
 //#include <stdio.h>
 
-
+//TODO if status says pod is free send it a new destination base on it's current location
 
 //SNAP::SNAP(uint8_t priority):scheduler_task("wireless", 512, priority, NULL)//for scheduler
 SNAP::SNAP(): status(0),speed(0),ticks(0),location(0), destination(0),mLastActivityTime(0)
@@ -34,11 +34,11 @@ SNAP::SNAP(): status(0),speed(0),ticks(0),location(0), destination(0),mLastActiv
 //   ticks = 0;
 //   mLastActivityTime = 0;
 }
-bool SNAP::recentlyActive( uint32_t ms)
-{
-    Uart3& wireless = Uart3::getInstance();
-    return wireless.recentlyActive(ms);
-}
+//bool SNAP::recentlyActive( uint32_t ms)
+//{
+//    Uart3& wireless = Uart3::getInstance();
+//    return wireless.recentlyActive(ms);
+//}
 
 bool SNAP::init()
 {
@@ -51,43 +51,44 @@ bool SNAP::send_Update()
     //add semaphore
     Uart3& wireless = Uart3::getInstance();
 //    if(wireless.printf("U%i:%i:%i,%i,%i,%i\n",time.hour, time.min, time.sec, location, status,speed))
-    if(wireless.printf("U%i,%i,%i,%i\n",mLastActivityTime, location, status,speed,ticks))
+    if(wireless.printf("U%i,%i,%i,%i,%i,%i\n",mLastActivityTime, location, status,speed,ticks,ticks/speed))
     {
-        resetActivity();
+        resetUpdateTime();
         return true;
     }
     else
         return false;
 }
 
-bool SNAP::send_Estimated_Time_to_Merge(uint32_t speed, int ticks)
+//bool SNAP::send_Estimated_Time_to_Merge(uint32_t speed, int ticks)
+//{
+//    Uart3& wireless = Uart3::getInstance();
+//    int ETM = ticks/speed;
+////    rtc_t time = rtc_gettime();
+//    if(wireless.printf("M%i",ETM))
+//    {
+////        wireless.resetActivity();
+//        return true;
+//    }
+//    else
+//        return false;
+//}
+bool SNAP::send_Merge()
 {
+    send_Update();
     Uart3& wireless = Uart3::getInstance();
-    int ETM = ticks/speed;
-//    rtc_t time = rtc_gettime();
-    if(wireless.printf("M%i",ETM))
-    {
-        wireless.resetActivity();
-        return true;
-    }
-    else
-        return false;
-}
-bool SNAP::send_Merge(uint32_t location,uint8_t status,uint32_t speed, uint32_t ticks)
-{
-    if(send_Update() && send_Estimated_Time_to_Merge(speed,ticks))
-        return true;
-    else
-        return false;
+    wireless.printf("M\n");
+    return true;
+//    if(send_Update() && send_Estimated_Time_to_Merge(speed,ticks))
+//        return true;
+//    else
+//        return false;
 }
 bool SNAP::send_Help(uint8_t status, uint32_t location )  //sends help to SNAP
 {
     Uart3& wireless = Uart3::getInstance();
     if(wireless.printf("E%i,%i",status,location))
-    {
         return true;
-        wireless.resetActivity();
-    }
     else
         return false;;
 }
@@ -97,7 +98,6 @@ char SNAP::get_nextCMD()
     char cmd;
     Uart3& wireless = Uart3::getInstance();
     wireless.scanf("%c",&cmd);
-    wireless.resetActivity();
     return cmd;
 }
 
@@ -133,17 +133,13 @@ int SNAP::get_Help()
     int dest;
     Uart3& wireless = Uart3::getInstance();
     wireless.scanf("%i",&dest);
-    wireless.resetActivity();
     return dest;
 }
 bool SNAP::get_TrackUpdate(uint32_t* dest,uint32_t* weight)
 {
     Uart3& wireless = Uart3::getInstance();
     if(wireless.scanf("%i %i",*dest,*weight))
-    {
-        wireless.resetActivity();
         return true;
-    }
     else
         return false;
 }
@@ -157,11 +153,12 @@ int SNAP::get_Merge()    //get the new time to merge
 /* This updates the time from the server
  * and sets the local RTC.
  * */
-void SNAP::setup_Time()//TODO
+void SNAP::setup_Time()
 {
     rtc_t update;
     int ty =0,tm=0,td=0,th=0,tmi=0,ts=0,tdw=0,tdy=0;
     char flag;
+    int counter= 0;
     Uart3& wireless = Uart3::getInstance();
     wireless.flush();
     wireless.printf("X\n",500);
@@ -169,12 +166,18 @@ void SNAP::setup_Time()//TODO
     while(flag != 'X')
     {
         wireless.getChar(&flag,100);
+        counter++;
+        if(counter > 128)//retry
+        {
+            counter = 0;
+            wireless.printf("X\n",500);
+            wireless.getChar(&flag,100);
+        }
     }
     vTaskDelay(10);//TODO: change to vtask delay or find better solution
 
     wireless.scanf("%i %i %i %i %i %i %i %i",&ty,&tm,&td,&th,
             &tmi,&ts,&tdw,&tdy);
-    wireless.resetActivity();
 //    printf("%i %i %i %i %i %i %i %i\n",ty,tm,td,th,tmi,ts,tdw,tdy);
     update.year = ty;   update.month = tm;
     update.day = td;    update.hour = th;
@@ -186,7 +189,6 @@ void SNAP::setup_Time()//TODO
 void SNAP::update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, int tic)
 {   status = sta;  speed = spe;
     ticks = tic;    location = loc;
-    resetActivity();
 }
 
 void SNAP::send_Time()  //sends current RTC
@@ -195,7 +197,6 @@ void SNAP::send_Time()  //sends current RTC
     Uart3& wireless = Uart3::getInstance();
     wireless.printf("R %i %i %i %i %i %i %i %i\n",update.year,update.month,update.day,
             update.hour, update.min,update.sec,update.dow,update.doy);
-    wireless.resetActivity();
 }
 
 bool SNAP::RXempty()

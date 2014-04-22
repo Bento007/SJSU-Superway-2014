@@ -86,6 +86,9 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
 
              }
          }
+
+     if(wireless.recentlyUpdated(50))//update SNAP at least every 50ms
+         wireless.send_Update();
      //     if(xQueueReceive(SMtoWireless, &pod, 100));
      //     Info was requested by a SNAP so send: the pod's speed, location, and name.
      //     from inside podStatus "pod" struct. This is retrieved from State machine task.
@@ -100,7 +103,6 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
      //             Note: Status not yet implemented. (OPTIONAL).
      //     -Time:
      //        Not sure what to do with this... yet. (optional?)
-
      }
 
  }
@@ -169,34 +171,6 @@ void pathingTask(void *p)
 /************************************
  * State Machine Code Below
  ***********************************/
-
-/* To communicate with wireless network!
- *
- * #include "uart3.hpp"
- *
- * grab an instance of uart 3. //TODO: create a semifore to control UART3 between tasks
- *  Uart3& snap = Uart3::getInstance();
- *
- * READ:
- *  snap.gets(char* ,int NumberToRead ,int timeToWait);
- * Example:
- *  char str[16];   //where the incoming str is read into.
- *  snap.gets(str ,16 ,100); //read 16 characters from SNAP
- *
- * WRITE:
- *  snap.putChar(char, int timeToWait); //TODO: make compatible with char*
- * NOTE! Only one character can be put into the queue per putChar()
- * NOTE! SNAP will not receive the string unless you end the message with '\n'
- * Example:
- *  snap.putChar('H', 100);
- *  snap.putChar('E', 100);
- *  snap.putChar('L', 100);
- *  snap.putChar('L', 100);
- *  snap.putChar('O', 100);
- *  snap.putChar('\n', 100);// terminating character
- *
- */
-
 enum PRT_States{
     startup =1,     // initializes everything
     ready   =2,     // waiting for direction
@@ -205,7 +179,8 @@ enum PRT_States{
     pickup  =5,     // directions received going to pick up location
     load    =6,     // at stations loading
     dropoff =7,     // in route to drop off
-    unload  =8      // at destination and unloading passengers
+    unload  =8,     // at destination and unloading passengers
+    emergency = 9   // an emergency has occured
 };
 
 //Directives will be sent to a queue that the line follower will receive and
@@ -278,6 +253,18 @@ void StateMachine(void *p)
     int array[11], receive;
     uint8_t send;
 
+
+    /*
+     * Variables the SNAP devices is tracking
+     * They will be updated every time the
+     * state machine task runs.
+     */
+    SNAP& wireless = SNAP::getInstance();
+//  status = current;           //< status of the pod
+    uint32_t speed = 0;         //< current speed or speed mode ex. "Fast, slow, stop"
+    uint32_t ticks = 0;         //< ticks till merge, counting down.
+    uint32_t loca = 0;          //< current section of track pod is traveling along.
+
     /*Initializes SPI (SSP) for comm with Arduino*/
 
     /*One time functions*/
@@ -290,6 +277,7 @@ void StateMachine(void *p)
     /*begin state machine*/
     while(1)
     {
+        //TODO determine the how long it takes to send a string of 32
         /*reset these values at the beginning of each loop
          * to prevent accidently reuse */
 
@@ -381,9 +369,9 @@ void StateMachine(void *p)
 
             case load:  LD.setNumber(5);
                 //Waiting mode:
-                //PUSH A BUTTON TO INDICATE LOADED
+
                 //same as unload basically.
-                //TODO:am i loaded?
+                //TODO:am i loaded? PUSH A BUTTON TO INDICATE LOADED
                 //if so
                 //next = dropoff
 
@@ -412,6 +400,7 @@ void StateMachine(void *p)
                 break;
         }
         current = next;// store the next state
+        wireless.update_SNAP(loca, current,speed, ticks); //update SNAP object.
     }
 
 }

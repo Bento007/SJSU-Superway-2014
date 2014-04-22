@@ -57,13 +57,16 @@ def COM(cmd,data):              #Status: WIP
                 temp2 = data[j:i-1]
             elif param == 3:
                 temp3 = data[j:i-1]
+            elif param == 4:
+                temp4 = data[j:i-1]
+            elif param == 5:
+                temp5 = data[j:i-1]
             j=i
             param +=1
                       #Desc        CMD    Target Address
     if cmd == 'U':    #get update  U
-        setLocals(temp0, temp1,temp2, temp3) 
+        setLocals(temp0, temp1, temp2, temp3,temp4, temp5)
     elif cmd == 'M':  #merge       M
-        setETM(temp0)
         merge()
     elif cmd == 'E':  #help        E    multicasted
         setStatus(temp0,temp1)
@@ -231,19 +234,21 @@ def setStatus(x,y):
     global lStat, lLoca
     lStat = x
     lLoca = y
-def setLocals(cTime, cLoca, cStat, cSped): #Status: Done, not tested
+def setLocals(cTime, cLoca, cStat, cSped,cticks, cETM): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
-    global cDest, nDest, lTime, lLoca, lSped, lStat, yields
+    global cDest, nDest, lTime, lLoca, lSped, lStat,lTick, yields, ETM
     #global cTime, cLoca, cSped, cStat, cTick
     
     if lTime != cTime: #if the last update is the same as current don't change anything
         lTime = cTime
         lSped = cSped
         lStat = cStat
+        lTick = cTick
+        ETM = cETM
         if lLoca == cDest:
             cDest = nDest
-            nDest = 0
+            nDest = 0   #if next location = 0, the pod can recieve a new "next destination"
         elif lLoca != cLoca:
             yields = 0 
 
