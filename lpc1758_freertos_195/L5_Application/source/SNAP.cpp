@@ -120,16 +120,20 @@ bool SNAP::send_Test()
 }
 bool  SNAP::get_newDest(uint32_t* dest)
 {
+    puts("Inside get_newDest");
     Uart3& wireless = Uart3::getInstance();
 //    uint8_t dest;
 //    wireless.putline("D",200);
     if(wireless.scanf("%i",dest))
     {
-        return true;
         destination = *dest;
+        puts("Destination set in get_newDest");
+        return true;
     }
-    else
+    else{
+        puts("Went to false");
         return false;
+    }
 }
 int SNAP::get_Help()
 {

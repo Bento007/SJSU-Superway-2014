@@ -75,7 +75,7 @@ void lineFollowerTask(void *p)
 //             puts("Inside if");
              switch(wireless.get_nextCMD())
              {
-
+                 vTaskDelay(100);
                  case 'U'://get a graph update and send it to pathing
                      wireless.get_TrackUpdate(&temp1, &temp2);
                      //TODO: add shared queue to send to pathing
@@ -96,10 +96,18 @@ void lineFollowerTask(void *p)
                      //TODO: add shared queue to send to pathing
                      break;
                  case 'D'://give pathingTask new destination
+                     puts("Case D");
                      //TODO: add shared queue to send to pathing
-                     wireless.get_newDest(&temp1);
+                     if(wireless.get_newDest(&temp1)){
                      //Send new destination value to the State Machine
+                     puts("Got Value!");
+                     printf("%i\n", temp1);
                      xQueueSend(newDestinationQ, &temp1, 100);
+                     }
+
+                     else
+                         puts("Failed to get_newDest");
+
                      break;
                  default://send to SNAP invalid CMD
 //                     puts("inside switch");
@@ -256,6 +264,7 @@ void StateMachine(void *p){
                  * else
                  *  next = error
                  */
+                puts("Startup State");
 //            printf("Startup state");
 //                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
@@ -279,43 +288,47 @@ void StateMachine(void *p){
             case ready:
                 LD.setNumber(2);
                 next = ready; //default until directions received.
+//                puts("In Ready state");
 //                printf("\nSource: ");             //for debugging
 //                scanf("%i", &start);              //for debugging
 //                printf("\nEnd: ");                //for debugging
 //                scanf("%i", &end);                //for debugging
 //                initPath.source = start;          //for debugging
 //                initPath.destination = end;       //for debugging
-                travelPath.source = 1;
-                travelPath.destination = 8;
-                xQueueSend(SMtoPath, &travelPath, 10);
-//                if(xQueueReceive(newDestinationQ, &travelPath.destination, 10)){
-                //Makes a call to the pathing algorithm
-                //for a new list of directions.
-//                dijkstraFunction(travelPath);
-//
+                travelPath.source = 1;            //for debugging
+//                travelPath.destination = 8;       //for debugging
+
+            if(xQueueReceive(newDestinationQ, &travelPath.destination, 10)){
+                puts("Destination received");
+                xQueueSend(SMtoPath, &travelPath, 1);
+
                 //Retrieve the list of directions to be sent to the line follower
                 //Contents contained within "array"
-                if(xQueueReceive(pathToSM, &receive, 1000))
+                if(xQueueReceive(pathToSM, &receive, 10))
                 {
                     int i =0;
+
                     do{
                         array[i] = receive;
                         printf("received: %i\n", receive);
                         i++;
-                    }while(xQueueReceive(pathToSM, &receive, 1000));
+                    }while(xQueueReceive(pathToSM, &receive, 10));
+
+                    puts("Sending to LF");
 
                     for(int k=0; k<i; k++)
                     {
-                        xQueueSend(directionQ, &array[k], 1000);  //send instructions to line follower.
-                        puts("Sending to LF");
+                        printf("Sending %i\n", array[k]);
+                        xQueueSend(directionQ, &array[k], 0);  //send instructions to line follower.
                     }
+
                     //At this point, directions are received.
                     //TODO: Send directions to line follower task
                     puts("Going to roam");
                     next = roam;
 //                    delay_ms(100);
                 }
-//                }//end if wireless
+                }//end if wireless
 
                 //else //has a direction to get clients
                 //next = pickup;
@@ -332,7 +345,9 @@ void StateMachine(void *p){
                 //Traveling mode
                 if(xQueueReceive(lineFollowertoSM, &receive, 2000))
                 {
-                    next = error;
+                    delay_ms(100);
+                    puts("Going to ready state");
+                    next = ready;
                 }
 //                puts("roaming");
 

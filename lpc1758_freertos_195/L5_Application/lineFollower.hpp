@@ -95,6 +95,11 @@ void setup() {
   // 0 = station
 }
 
+void debuggerFunc(void)
+{
+    delay_ms(500);
+}
+
 void loop() {    // all sensors are active low
   // LOW = white    HIGH = black
   int goright=2;
@@ -104,21 +109,27 @@ void loop() {    // all sensors are active low
 
   while(1){
 
-      RCmode(); //stays here until need to change.
+//      RCmode(); //stays here until need to change.
 
-      xQueueReceive(directionQ, &pop, 500);
-
-      if(pop==2){
-        turnRight();
+      if(xQueueReceive(directionQ, &pop, 500)){
+      printf("LF %i", pop);
+      if(pop == 0){
+          puts("\n");
+          xQueueSend(lineFollowertoSM, &pop, 10);
       }
-      if(pop==1){
-        straight();
+      debuggerFunc();
       }
-      if(pop==0){
-        station();
-//        int i =9;
-//        xQueueSend(lineFollowertoSM, &i, 10);
-      }
+//      if(pop==2){
+//        turnRight();
+//      }
+//      if(pop==1){
+//        straight();
+//      }
+//      if(pop==0){
+//        station();
+////        int i =9;
+////        xQueueSend(lineFollowertoSM, &i, 10);
+//      }
   }
 }
 
