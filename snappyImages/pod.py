@@ -16,6 +16,7 @@ from pod_func import *              #includes all the pods comands.
 #global variables
 # PORTAL_ADDRESS = "\x00\x00\x01" # For immediate debug/stdout
 NET_ID = "\x90\x01"
+count = 0
 # NET_GROUP_ALL = "\xFF\xFF"
 """messages need to be recieved from wireless and buffered. 
     The first byte the type and piority
@@ -85,7 +86,7 @@ def stdinEvent(buf):    #Status: Done, not tested
     elif cmd =='P':
         print buf[1:n]
 
-@setHook(HOOK_STDOUT)
+#@setHook(HOOK_STDOUT)
 def printed():          #Status: not done, not tested
     pass
 @setHook(HOOK_1S)
@@ -95,7 +96,12 @@ def hook_1s():          #Status: Done, not tested
     with other nodes so they can find 
     you.
     """
-    #register()
+    global count
+    count = count + 1
+    if count > 5:
+        count = 0
+        printStatus()
+    getDest()
     pass
 #@setHook(HOOK_10MS)
 def hook_10ms():

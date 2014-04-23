@@ -60,7 +60,7 @@ void lineFollowerTask(void *p)
  *********************************/
  void wirelessTask(void *p)
  {
-     puts("Initializing WT");
+//     puts("Initializing WT");
      SNAP& wireless = SNAP::getInstance();
      wireless.init();
 //     podStatus pod;
@@ -75,7 +75,7 @@ void lineFollowerTask(void *p)
 //             puts("Inside if");
              switch(wireless.get_nextCMD())
              {
-                 vTaskDelay(100);
+//                 vTaskDelay(100);
                  case 'U'://get a graph update and send it to pathing
                      wireless.get_TrackUpdate(&temp1, &temp2);
                      //TODO: add shared queue to send to pathing
@@ -96,18 +96,17 @@ void lineFollowerTask(void *p)
                      //TODO: add shared queue to send to pathing
                      break;
                  case 'D'://give pathingTask new destination
-                     puts("Case D");
+//                     puts("Case D");
                      //TODO: add shared queue to send to pathing
-                     if(wireless.get_newDest(&temp1)){
-                     //Send new destination value to the State Machine
-                     puts("Got Value!");
-                     printf("%i\n", temp1);
-                     xQueueSend(newDestinationQ, &temp1, 100);
+                     if(wireless.get_newDest(&temp1))
+                     {
+//                     Send new destination value to the State Machine
+//                         puts("Got Value!");
+//                         printf("%i\n", temp1);
+                         xQueueSend(newDestinationQ, &temp1, 100);
                      }
-
-                     else
-                         puts("Failed to get_newDest");
-
+//                     else
+//                         puts("Failed to get_newDest");
                      break;
                  default://send to SNAP invalid CMD
 //                     puts("inside switch");

@@ -40,7 +40,7 @@ class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data i
         bool send_Test();            //tests that the snap is working
         void send_Time();   //X<-cmd, R->cmd sends current RTC
 
-        bool get_newDest(uint32_t* dest);    //cmd <-> 'D' TODO:get new destination from network
+        bool get_newDest(uint32_t *dest);    //cmd <-> 'D' TODO:get new destination from network
         bool get_TrackUpdate(uint32_t* dest,uint32_t* weight); // cmd <- 'U' get an update for the graph
         char get_nextCMD();     //get the command from the snap     //get the command from the snap
         int get_Help();    //cmd <- 'E' get the help command from snap

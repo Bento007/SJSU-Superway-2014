@@ -22,7 +22,7 @@ lTime = 0 #last time
 lSped = 0 #last speed
 lLoca = 0 #last location
 lStat = 0 #last status
-# lTick = 0 #last ticks till merge. Tick needs a time stamp connected to it.
+lTick = 0 #last ticks till merge. Tick needs a time stamp connected to it.
 
 
 yields =0 #how many times the pods has yielded in a row. used in for merge priority
@@ -203,7 +203,8 @@ def getGlobals():  #status: Done, Tested
 #     global cmd
 #     cmd = x
 def setActive():
-    global active
+    global active#, cDest
+    #cDest = 8
     active = 1
 def getTimeRPC():
     #rpc(PORTAL_ADDR'callback','getTime','getTimeRPC')
@@ -215,6 +216,7 @@ def getTime(yyyy,mm,dd,hh,min,ss,dow,doy):  #TODO finish
 def setDest(destIn):    #status: Done, Tested
     global cDest
     cDest = destIn
+    getDest()
 
 def setETM(x,y):
     global ETM, lTime
@@ -234,7 +236,7 @@ def setStatus(x,y):
     global lStat, lLoca
     lStat = x
     lLoca = y
-def setLocals(cTime, cLoca, cStat, cSped,cticks, cETM): #Status: Done, not tested
+def setLocals(cTime, cLoca, cStat, cSped,cTick, cETM): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
     global cDest, nDest, lTime, lLoca, lSped, lStat,lTick, yields, ETM
@@ -290,4 +292,7 @@ def test():
 #                 cSped = input[j:i-1]
 #             j=i
 #             param +=1
-#     setLocals(cTime, cLoca,cStat, cSped)       
+#     setLocals(cTime, cLoca,cStat, cSped)      
+def printStatus():
+    global cDest,lTime, lLoca, lSped, lStat,lTic
+    rpc(PORTAL_ADDR,'podStatus',lTime,lStat,lLoca,lSped,lTick,cDest)
