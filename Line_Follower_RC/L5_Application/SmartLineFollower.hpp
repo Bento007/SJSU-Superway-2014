@@ -90,14 +90,15 @@ void loop() {    // all sensors are active low
   int gostraight=1;
   int gostation=0;
   int pop;
-//  xQueueSend(instructions, &gostraight, 500);
-//  xQueueSend(instructions, &goright, 500);
-//  xQueueSend(instructions, &gostraight, 500);
-//  xQueueSend(instructions, &gostraight, 500);
-//  xQueueSend(instructions, &goright, 500);
-//  xQueueSend(instructions, &gostation, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &goright, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &gostraight, 500);
+  xQueueSend(instructions, &goright, 500);
+  xQueueSend(instructions, &gostation, 500);
   while(1){
-	  xQueueSend(instructions, &gostraight, 500);
 	  RCmode();
 	  xQueueReceive(instructions, &pop, 500);
 
@@ -119,7 +120,7 @@ void turnRight(){
 	while(exit){
 		LPC_GPIO0->FIOSET = (1 << aMUX);	// 0b11 = go straight
 		LPC_GPIO0->FIOSET = (1 << bMUX);
-		if(!getLeft()){
+		if((!getLLeft()&&!getLeft())||(!getLLeft()&&!getRight())){
 			exit=false;
 		}
 	}
@@ -176,7 +177,7 @@ void SWmode(){
 	delay_ms(100);
 
 }
-
+//
 //void setLeftMotor(bool set)
 //{
 //	if(set==false){
