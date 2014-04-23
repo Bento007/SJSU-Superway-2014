@@ -10,13 +10,9 @@ NET_ID = "\x01\x90"
 NET_GROUP_ALL = "\xFF\xFF"
 PORTAL_ADDR = "\x00\x00\x01"
 active = 0  #must be set before the pod can get directions
-#-----Last command and parameters
-# cmd = 0                     # Tracks the current command
-# addr= 0                     # Current address tallking too 
-# data = 0                    # Tracks the data returned from a RPC
 
 """ These values are updated from the pod to send to neighbors
-    these values are updated every 100ms
+    these values are updated every 50ms
     """
 cTime = 0 #last time
 cSped = 0 #last speed
@@ -25,12 +21,16 @@ cStat = 0 #last status
 cTick = 0 #last ticks till merge. Tick needs a time stamp connected to it.
 
 yields =0 #how many times the pods has yielded in a row. used in for merge priority
- 
-#cTime = 0 #current Time
-#cSped = 0 #current speed
-#cLoca = 0 #current location
-#cTick = 0 #current ticks till merge
-#cStat = 0 #current status
+
+startup =1     #// initializes everything
+ready   =2     #// waiting for direction
+error   =3     #// error detected or initialize failed
+roam    =4     #// no directions received driving around track
+pickup  =5     #// directions received going to pick up location
+load    =6     #// at stations loading
+dropoff =7     #// in route to drop off
+unload  =8     #// at destination and unloading passengers
+emergency = 9  #// an emergency has occured
 
 cDest = 0 #current Destination
 nDest = 0 #next Destination #don't know what to do with it yet.
@@ -212,15 +212,18 @@ def getTimeRPC():
 #    print xTime[0],' ',xTime[1],' ',xTime[2],' ',xTime[3],' ',xTime[4],' ',xTime[5],' ',xTime[6],' ',xTime[7]
 def getTime(yyyy,mm,dd,hh,min,ss,dow,doy):  #TODO finish
     print "X ",yyyy,' ',mm,' ',dd,' ',hh,' ',min,' ',ss,' ',dow,' ',doy
-def setDest(destIn):    #status: Done, Tested
-    global cDest
-    if cLoca == cDest: # if you're at your destination, then you can receive a new destination
-        cDest = destIn
-    getDest()
-def setRoute(pickup, dropoff):    #status: Done, Tested
+# def setDest(destIn):    #status: Done, Tested
+#     global cDest
+#     if cLoca == cDest: # if you're at your destination, then you can receive a new destination
+#         cDest = destIn
+#         getDest()
+    
+def setRoute(PU, DO):    #status: Done, Tested
     global cDest, nDest
-    if cLoca == cDest & nDest == 0 & cStat: # if you're at your destination, then you can receive a new destination
-        cDest = pickup
+    #if cLoca == cDest & nDest == 0 & cStat: # if you're at your destination, then you can receive a new destination
+    if readyForNewRoute():
+        cDest = PU
+        nDest = DO
     getDest()
 def setETM(x,y):
     global cETM, cTime
@@ -244,7 +247,6 @@ def setLocals(Time, Loca, Stat, Sped,Tick, ETM): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
     global cDest, nDest, cTime, cLoca, cSped, cStat,cTick, yields, cETM
-    #global cTime, cLoca, cSped, cStat, cTick
     
     if cTime != Time: #if the last update is the same as current don't change anything
         cTime = Time
@@ -252,9 +254,11 @@ def setLocals(Time, Loca, Stat, Sped,Tick, ETM): #Status: Done, not tested
         cStat = Stat
         cTick = Tick
         cETM = ETM
-        if cLoca == cDest:
+        #if cLoca == cDest & cStat == ready: #check if at location
+        if readyForNextDest(): #check if at location
             cDest = nDest
-            nDest = 0   #if next location = 0, the pod can recieve a new "next destination"
+            nDest = 0  #if next location = 0, the pod can recieve a new "next destination"
+            getDest()
         elif cLoca != Loca:
             yields = 0 
 
@@ -298,4 +302,23 @@ def test():
 #             param +=1
 #     setLocals(cTime, cLoca,cStat, cSped)      
 def printStatus():#sends the stats of the pod to the master.
+    """ sends a update to the master: 
+        -if ready and no destination the master will provide a 
+        new pick up and drop off location as needed.
+        -The master can react to the pod based off what it recieves
+        """
     rpc(PORTAL_ADDR,'podStatus',cTime,cStat,cLoca,cSped,cTick,cDest)
+    
+def readyForNextDest():
+    """ checks if the pod is ready to recieve a new destination"""
+    if cLoca == cDest & cStat == dropoff:
+        return true
+    else:
+        return false
+def readyForNewRoute():
+    """Check id the pod is reday to recieve a new destination
+    from the master"""
+    if cLoca == cDest & cStat == ready & nDest == 0:
+        return true
+    else:
+        return false 

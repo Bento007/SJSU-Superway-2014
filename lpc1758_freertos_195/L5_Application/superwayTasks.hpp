@@ -76,7 +76,7 @@ void lineFollowerTask(void *p)
              switch(wireless.get_nextCMD())
              {
 //                 vTaskDelay(100);
-                 case 'U'://get a graph update and send it to pathing
+                 case 'U'://get a graph update and send it to pathing //TODO: make graph dynamic
                      wireless.get_TrackUpdate(&temp1, &temp2);
                      //TODO: add shared queue to send to pathing
                      /* Description:
@@ -87,15 +87,15 @@ void lineFollowerTask(void *p)
                       * implemented.
                       */
                      break;
-                 case 'M'://tell stateMachineTask to change speed for merge
+                 case 'M'://tell stateMachineTask to change speed for merge//TODO: test
                      temp1 = wireless.get_Merge();
                      //TODO: add shared queue to send to statemachine
                      break;
-                 case 'E'://give pathingTask a graph update
+                 case 'E'://give pathingTask a graph update//TODO: make graph dynamic
                      temp1 = wireless.get_Help();
                      //TODO: add shared queue to send to pathing
                      break;
-                 case 'D'://give pathingTask new destination
+                 case 'D'://give pathingTask new destination//TODO: check for valid destination inputs
 //                     puts("Case D");
                      //TODO: add shared queue to send to pathing
                      if(wireless.get_newDest(&temp1))
@@ -410,7 +410,7 @@ void StateMachine(void *p){
                 break;  //end default-state
         }
         current = next;                                     // store the next state
-//        wireless.update_SNAP(loca, current,speed, ticks);   //update SNAP object.
+        wireless.update_SNAP(loca, current,speed, ticks);   //update SNAP object.
     }
 
 }

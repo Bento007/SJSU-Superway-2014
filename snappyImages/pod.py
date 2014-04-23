@@ -101,7 +101,7 @@ def hook_1s():          #Status: Done, not tested
     if count > 5:
         count = 0
         printStatus()
-    getDest()
+    getDest() # TODO: remove this once master can use setRoute
     pass
 #@setHook(HOOK_10MS)
 def hook_10ms():

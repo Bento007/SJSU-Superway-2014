@@ -17,7 +17,7 @@ def getTimeRPC():
     print str #TODO: log this
 def registerRPC(location):
     rpc(remoteAddr,'setActive')
-    str = "Registered: " + remoteNode.name
+    str = "Registered: " + remoteNode.name +" @Location:" + str(location)
     print str #TODO: log this
 
 def podStatus(time,status,location,speed,ticks, destination):
@@ -25,15 +25,16 @@ def podStatus(time,status,location,speed,ticks, destination):
     #remoteNode.getFormattedNetworkId()
     str = remoteNode.name + "="
     str1 ="Time:", time,"Status:",status,"Location:", location,"Speed:", speed,"Ticks:", ticks,"Destination:", destination
-    if destination == 0 & status == ready:
+    if destination == 0 & status == ready:#TODO when is destination zero other than startup
         #TODO: find a new destination for the pod
-        destination = 8
-        rpc(remoteAddr,'setDest',destination)
+        pickup = 8
+        dropoff = 1
+        rpc(remoteAddr,'setRoute',pickup, dropoff)
     
     #logData(
     print str,str1 #TODO: log this
     
-def setDest():
+def setRoute():
     pass
 def setActive():
     pass
