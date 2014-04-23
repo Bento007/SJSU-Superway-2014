@@ -15,140 +15,174 @@
  *      -Added timers
  */
 
-#include "scheduler_task.hpp"
-#include "utilities.h"
-#include "eint.h"
-#include "lpc_pwm.hpp"
-#include "io.hpp"
 
 #ifndef LINEFOLLOWER_HPP_
 #define LINEFOLLOWER_HPP_
 
-//save space by #define constants, let the compiler handle it. -Trent S.
-#define leftspeed 6
-#define rightspeed 7
-#define lleft 20
-#define left 22
-#define middle 23
-#define right 28
-#define rright 29
-#define go 20
-#define stop 0
-#define notchDistance 12   // 12mm
+#include "tasks.hpp"
+#include "examples/examples.hpp"
+#include "utilities.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <sys_config.h>
+#include "lpc_sys.h"
+#include "io.hpp"
+#include "queue.h"
 
-class sensorMotorTask : public scheduler_task
+// PIN MAP //
+#define leftmotor 0         // PORT 2
+#define rightmotor 1
+#define aMUX 29             // PORT 0
+#define bMUX 30
+#define lleftsensor 29      // PORT 1
+#define leftsensor 28
+#define middlesensor 23
+#define rightsensor 22
+#define rrightsensor 20
+
+void turnRight();
+void loop();
+void station();
+void straight();
+void RCmode();
+void SWmode();
+void setLeftMotor(bool set);
+void setRightMotor(bool set);
+
+bool getRRight(void)
 {
-    public:
+    return !!(LPC_GPIO1->FIOPIN & (1 << rrightsensor));
+}
+bool getRight(void)
+{
+    return !!(LPC_GPIO1->FIOPIN & (1 << rightsensor));
+}
+bool getMiddle(void)
+{
+    return !!(LPC_GPIO1->FIOPIN & (1 << middlesensor));
+}
+bool getLeft(void)
+{
+    return !!(LPC_GPIO1->FIOPIN & (1 << leftsensor));
+}
+bool getLLeft(void)
+{
+    return !!(LPC_GPIO1->FIOPIN & (1 << lleftsensor));
+}
 
-        sensorMotorTask(uint8_t priority) :scheduler_task("lineFollower", 1024*4, priority)
-        {
-            /*initialize members*/
-            leftMotorPtr = new PWM(PWM::pwm1,100);//TODO: see if leftMotor works
-            rightMotorPtr= new PWM(PWM::pwm1,100); //TODO: see if rightMotorPtr works
+QueueHandle_t instructions;
 
-            LTargetSpe=go;
-            RTargetSpe=go;
-            LActualSpe = 0; ///< Calculated speed for left wheel
-            RActualSpe = 0; ///< Calculated speed for right wheel
+void setup() {
 
-            lastLeftTimer = 0;
-            lastRightTimer = 0;
+    LPC_SC->PCLKSEL0 &= ~(3<<12);
+    LPC_SC->PCLKSEL0 |= (1<<13);                    // set CLK/1
 
-            deltaleft = 0;
-            deltaright = 0;
+    // INPUTS //
+    LPC_GPIO1->FIODIR &= ~(1 << lleftsensor);
+    LPC_GPIO1->FIODIR &= ~(1 << leftsensor);
+    LPC_GPIO1->FIODIR &= ~(1 << middlesensor);
+    LPC_GPIO1->FIODIR &= ~(1 << rightsensor);
+    LPC_GPIO1->FIODIR &= ~(1 << rrightsensor);
+
+    // OUTPUTS //
+    LPC_GPIO2->FIODIR |= (1 << leftmotor);
+    LPC_GPIO2->FIODIR |= (1 << rightmotor);
+    LPC_GPIO0->FIODIR |= (1 << aMUX);
+    LPC_GPIO0->FIODIR |= (1 << bMUX);
+
+  // 2 = turn right
+  // 1 = straight
+  // 0 = station
+}
+
+void loop() {    // all sensors are active low
+  // LOW = white    HIGH = black
+  int goright=2;
+  int gostraight=1;
+  int gostation=0;
+  int pop;
+
+  while(1){
+
+      RCmode(); //stays here until need to change.
+
+      xQueueReceive(instructions, &pop, 500);
+
+      if(pop==2){
+        turnRight();
+      }
+      if(pop==1){
+        straight();
+      }
+      if(pop==0){
+        station();
+      }
+  }
+}
+
+void turnRight(){
+    bool exit=true;
+    LD.setNumber(2);
+    while(exit){
+        LPC_GPIO0->FIOSET = (1 << aMUX);    // 0b11 = go straight
+        LPC_GPIO0->FIOSET = (1 << bMUX);
+        if((!getLLeft()&&!getLeft())||(!getLLeft()&&!getRight())){
+            exit=false;
         }
+    }
+}
 
-        bool init(void)
+void straight(){                // not 100% sure this is correct
+    LD.setNumber(1);
+    LPC_GPIO0->FIOCLR = (1 << aMUX);        // 0b10 = turn right
+    LPC_GPIO0->FIOSET = (1 << bMUX);
+    bool exit=true;
+    while(exit)
+    {
+        printf("lleft=%i  left=%i  middle=%i  right=%i  rright=%i\n",!getLLeft(),!getLeft(),!getMiddle(),!getRight(),!getRRight());
+        if((!getLeft()&&!getRight())||(!getLLeft()&&!getLeft()&&!getRRight())||(!getLLeft()&&!getRight()&&!getRRight()))
         {
-            LPC_SC->PCLKSEL0 &= ~(3<<12);
-            LPC_SC->PCLKSEL0 |= (1<<13);                    // set CLK/1
-            LPC_GPIO2->FIODIR &= ~(1<<leftspeed);           // speed input pin 2.6
-            LPC_GPIO2->FIODIR &= ~(1<<rightspeed);          // speed input pin 2.7
-
-            // sensor pins as input
-            LPC_GPIO1->FIODIR &= ~(1 << lleft);             // lleft sensor input
-            LPC_GPIO1->FIODIR &= ~(1 << left);              // left sensor input
-            LPC_GPIO1->FIODIR &= ~(1 << middle);            // middle sensor input
-            LPC_GPIO1->FIODIR &= ~(1 << right);             // right sensor input
-            LPC_GPIO1->FIODIR &= ~(1 << rright);            // rright sensor input
-
-            LPC_GPIO0->FIODIR |= (1<<0);                    // output to LCD
-
-    //        eint3_enable_port2( leftspeed, eint_rising_edge , &calcLeftSpe);//TODO: fix interrupts by adding definition
-    //        eint3_enable_port2( rightspeed, eint_rising_edge , &calcRightSpe);
-
-            // EP: add shared object of queue/semaphore
-            return true;
+            exit=false;
         }
+    }
+}
 
+void station(){
+    LD.setNumber(0);
+    LPC_GPIO0->FIOCLR = (1 << aMUX);        // 0b00 = RC mode
+    LPC_GPIO0->FIOCLR = (1 << bMUX);
+    delay_ms(5000);
+    straight();
+}
 
-        bool run(void *p)
-        {
-            leftMotorPtr->set(go);       // todo: not working, come back and fix
-            rightMotorPtr->set(go);
-
-            /// FOLLOWING LINE ///
-    //      if(!(LPC_GPIO2->FIOPIN & (1 << speedpin)))
-
-    //      if ((LPC_GPIO1->FIOPIN & (1 << left)) && (LPC_GPIO1->FIOPIN & (1 << right))){
-    //          leftmotor.set(go);
-    //          rightmotor.set(go);
-    //          printf("go straight");
-    //      }
-    //      else if (!(LPC_GPIO1->FIOPIN & (1 << left)) && !(LPC_GPIO1->FIOPIN & (1 << right))){
-    //          leftmotor.set(stop);
-    //          rightmotor.set(stop);
-    //          printf("motor stop\n");
-    //      }
-    //      else if(!(LPC_GPIO1->FIOPIN & (1 << left))){        // if left sensor hits line
-    //          leftmotor.set(stop);
-    //          rightmotor.set(go);
-    //          printf("go right\n");
-    //      }
-    //      else if (!(LPC_GPIO1->FIOPIN & (1 << right))){
-    //          leftmotor.set(go);
-    //          rightmotor.set(stop);
-    //          printf("go left\n");
-    //      }
-            vTaskDelay(1000);
-            return true;
+void RCmode(){
+    bool exit=true;
+    while(exit){
+        LD.setNumber(3);
+        LPC_GPIO0->FIOCLR = (1 << aMUX);            // 0b00 = RC mode
+        LPC_GPIO0->FIOCLR = (1 << bMUX);
+        if(getLLeft()&&getRRight()){
+            exit=false;
         }
+        if(!getLLeft()&&getLeft()&&!getMiddle()&&getRight()&&!getRRight()){
+            SWmode();
+        }
+    }
+}
 
-        /*Calculates the actual speed of the wheels*/
-    //    void calcLeftSpe()
-    //    {
-    //        int currentTime = sys_get_high_res_timer_us();
-    //        deltaleft = currentTime - lastLeftTimer;
-    ////        printf("deltaleft = %i  \n", deltaleft);
-    //
-    //        lastLeftTimer = sys_get_high_res_timer_us();
-    //        return;
-    //    }
-    //    /*Calculates the actual speed of the wheels*/
-    //    void calcRightSpe()
-    //    {
-    //        int currentTime = sys_get_high_res_timer_us();
-    //        deltaright = currentTime - lastRightTimer;
-    ////        printf("     deltaright = %i  \n", deltaright);
-    //        lastRightTimer = sys_get_high_res_timer_us();
-    //    }
+void SWmode(){
+//  setLeftMotor(false);
+//  setRightMotor(true);
+    LD.setNumber(4);
+    LPC_GPIO2->FIOCLR = (1 << leftmotor);
+    LPC_GPIO2->FIOSET = (1 << rightmotor);
 
-    private:
-        PWM *leftMotorPtr;      // testing ignore
-        PWM *rightMotorPtr;
+    // choose 0b01 = software mode
+    LPC_GPIO0->FIOSET = (1 << aMUX);
+    LPC_GPIO0->FIOCLR = (1 << bMUX);
+    delay_ms(100);
 
-        int LTargetSpe;  ///< Target speed for left wheel
-        int RTargetSpe;  ///< Target speed for right wheel
-
-        int LActualSpe; ///< Calculated speed for left wheel
-        int RActualSpe; ///< Calculated speed for right wheel
-
-        int lastLeftTimer;
-        int lastRightTimer;
-
-        int deltaleft;
-        int deltaright;
-};
+}
 
 
 #endif /* LINEFOLLOWER_HPP_ */

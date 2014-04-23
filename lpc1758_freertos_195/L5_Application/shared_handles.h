@@ -27,8 +27,6 @@
 #ifndef SHARED_HANDLES_H__
 #define SHARED_HANDLES_H__
 
-
-
 /**
  * Enumeration of shared handles
  */

@@ -15,8 +15,8 @@
 #include "task.h"
 #include "rtc.h"
 #include "uart3.hpp"
-//#include "utilities.h"
-//#include <stdio.h>
+#include "utilities.h"
+#include <stdio.h>
 
 //TODO if status says pod is free send it a new destination base on it's current location
 
@@ -94,10 +94,13 @@ bool SNAP::send_Help(uint8_t status, uint32_t location )  //sends help to SNAP
 }
 char SNAP::get_nextCMD()
 {
+//    puts("nextCMD");
     //add semaphore
     char cmd;
     Uart3& wireless = Uart3::getInstance();
+//    puts("Got instance");
     wireless.scanf("%c",&cmd);
+//    puts("after scanf");
     return cmd;
 }
 

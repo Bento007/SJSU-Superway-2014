@@ -380,41 +380,41 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
 //            printf("%i ", arrayDir[index]);
 //            index++;
 //        }
-        printf("\n\n");
+        printf("\nEnd Print\n");
 
      return arrayDir;
 }
 
-void dijkstraFunction(path initPath){
-//    path initPath;
-    int size = 15;
-    int array[size];
-    int send = 50;
-    bool done = false;
-    bool start = true;
-
-    dijkstra *mainGraph = new dijkstra;
-    makeGraph(mainGraph);
-    dijkstraFunc(mainGraph, initPath.source);
-
-    int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
-    int i=0;
-
-    while(!done)
-    {
-        send = directions[i];
-
-        if(!start && send == 0){
-            xQueueSend(pathToSM, &send,0);
-            done = true;
-            break;
-        }
-
-        xQueueSend(pathToSM, &send, 10);
-        start = false;
-        i++;
-    }
-    printf("\n\n");
-}
+//void dijkstraFunction(path initPath){
+////    path initPath;
+//    int size = 15;
+//    int array[size];
+//    int send = 50;
+//    bool done = false;
+//    bool start = true;
+//
+//    dijkstra *mainGraph = new dijkstra;
+//    makeGraph(mainGraph);
+//    dijkstraFunc(mainGraph, initPath.source);
+//
+//    int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
+//    int i=0;
+//    puts("Received directions Dijkstra Function");
+//    while(!done)
+//    {
+//        send = directions[i];
+//
+//        if(!start && send == 0){
+//            xQueueSend(pathToSM, &send,0);
+//            done = true;
+//            break;
+//        }
+//
+//        xQueueSend(pathToSM, &send, 10);
+//        start = false;
+//        i++;
+//    }
+//    printf("\nEnd dijstraFunction returning to SM task \n");
+//}
 
 #endif /* DIJKSTRA_HPP_ */

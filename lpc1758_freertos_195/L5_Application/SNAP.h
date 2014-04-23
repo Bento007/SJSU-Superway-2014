@@ -19,7 +19,7 @@
 #include "singleton_template.hpp"  // Singleton Template
 
 //class SNAP : public scheduler_task    //for scheduler
-class SNAP : public SingletonTemplate<SNAP>
+class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data is received
 {
     public:
         /**

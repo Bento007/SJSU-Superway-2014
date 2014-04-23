@@ -190,6 +190,7 @@ bool snap_test()
 {
     LE.setAll(0xFF);
     delay_ms(1000);
+    SNAP::getInstance().init(); // initialize snap
 
 
     printf("SNAP time Test:\n");

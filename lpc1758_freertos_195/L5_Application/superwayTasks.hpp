@@ -22,8 +22,8 @@
 #include "dijkstra.hpp"
 #include "SNAP.H"
 #include "io.hpp"
-
-
+#include "shared_queues.hpp"
+#include "lineFollower.hpp"
 
 #define QDelay 100
 /**********************************
@@ -33,16 +33,22 @@
  * --- Wireless:        High
  ***********************************/
 
+
 /**********************************
- * Shared Queues
- **********************************/
-QueueHandle_t   SMtoWireless,       //State machine -> wireless
-                WirelesstoSM,       //Wireless -> State machine
-                SMtoLineFollower,   //State machine -> Line follower
-                lineFollowertoSM,   //Line follower -> State Machine
-                SMtoPath,           //State machine -> Pathing (djikstra)
-                directionQ;         //Pathing (djikstra) -> State machine
-//TODO: check if more queues are needed
+ * Line Follower Task
+ * -Uses queue "instructions"
+ *
+ *
+ ***********************************/
+
+void lineFollowerTask(void *p)
+{   setup();    //initialize the line follower
+    while(1)
+    {
+        loop();//run lineFollower
+    }
+}
+
 
 /**********************************
  * Wireless Task
@@ -54,20 +60,32 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
  *********************************/
  void wirelessTask(void *p)
  {
+     puts("Initializing WT");
      SNAP& wireless = SNAP::getInstance();
+     wireless.init();
 //     podStatus pod;
      uint32_t temp1,temp2;
      while(1)
      {
+         puts("While loop of WT");
          temp1 = 0;
          temp2 = 0;
          if(!wireless.RXempty())
          {
+//             puts("Inside if");
              switch(wireless.get_nextCMD())
              {
+
                  case 'U'://get a graph update and send it to pathing
                      wireless.get_TrackUpdate(&temp1, &temp2);
                      //TODO: add shared queue to send to pathing
+                     /* Description:
+                      * In this case, a wireless command was received
+                      * to change the weight of a particular part of
+                      * the system track, this requires updating the
+                      * graph in the pathing algorithm. Needs to be
+                      * implemented.
+                      */
                      break;
                  case 'M'://tell stateMachineTask to change speed for merge
                      temp1 = wireless.get_Merge();
@@ -79,16 +97,20 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
                      break;
                  case 'D'://give pathingTask new destination
                      //TODO: add shared queue to send to pathing
-                     temp1 = wireless.get_newDest(&temp1);
+                     wireless.get_newDest(&temp1);
+                     //Send new destination value to the State Machine
+                     xQueueSend(newDestinationQ, &temp1, 100);
                      break;
                  default://send to SNAP invalid CMD
+//                     puts("inside switch");
                      break;
 
              }
          }
-
-     if(wireless.recentlyUpdated(50))//update SNAP at least every 50ms
+//             puts("before if");
+     if(!wireless.recentlyUpdated(50))//update SNAP at least every 50ms
          wireless.send_Update();
+//     puts("After switch");
      //     if(xQueueReceive(SMtoWireless, &pod, 100));
      //     Info was requested by a SNAP so send: the pod's speed, location, and name.
      //     from inside podStatus "pod" struct. This is retrieved from State machine task.
@@ -103,70 +125,12 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
      //             Note: Status not yet implemented. (OPTIONAL).
      //     -Time:
      //        Not sure what to do with this... yet. (optional?)
+//     vTaskDelay()
      }
 
  }
 
-/***********************************
- * Djikstra Task
- * -------------
- * Sends info to state machine thru
- * -directions queue.
- * Receives data from SM thru
- * -SMtoPath queue.
- ***********************************/
 
-void pathingTask(void *p)
-{
-//    From Wireless task, may receive:
-//         -New destination to calculate path for.
-//         -Some update status for the map. Maybe a route is blocked.
-//
-//    From Fat32, will receive:
-//         -Contents, the map.
-//
-//    To Fat32, will send:
-//         -New map weights. Routes may be inaccessible now.
-//
-//    To State machine, will send:
-//         -List of directions via the directionQ queue. Can be array with
-//          instructions for each "node"
-
-    path initPath;
-
-   while(1)
-   {
-       int size = 15;
-       int array[size];
-       int send = 50;
-       bool done = false;
-       bool start = true;
-       if(xQueueReceive(SMtoPath, &initPath, 100)){
-           dijkstra *mainGraph = new dijkstra;
-           makeGraph(mainGraph);
-           dijkstraFunc(mainGraph, initPath.source);
-
-           int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
-//            printf("Got the array!\n");
-           int i=0;
-           while(!done)
-           {
-               send = directions[i];
-
-               if(!start && send == 0){
-                   xQueueSend(directionQ, &send,0);
-                   done = true;
-                   break;
-               }
-
-               xQueueSend(directionQ, &send, 10);
-               start = false;
-               i++;
-           }
-           printf("\n\n");
-       }
-   }
-}
 
 /************************************
  * State Machine Code Below
@@ -244,14 +208,13 @@ typedef struct{
 }podStatus;
 
 
-void StateMachine(void *p)
-{
+void StateMachine(void *p){
     /*initialize variables here*/
-//    Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
-    PRT_States current= startup, next;
-    podStatus pod;
+    PRT_States current= startup, next =  startup;
+//    podStatus pod;                          //Is this needed???
     int array[11], receive;
-    uint8_t send;
+    path travelPath;
+//    int start, end;
 
 
     /*
@@ -265,7 +228,6 @@ void StateMachine(void *p)
     uint32_t ticks = 0;         //< ticks till merge, counting down.
     uint32_t loca = 0;          //< current section of track pod is traveling along.
 
-    /*Initializes SPI (SSP) for comm with Arduino*/
 
     /*One time functions*/
     LD.setNumber(0);
@@ -281,10 +243,6 @@ void StateMachine(void *p)
         /*reset these values at the beginning of each loop
          * to prevent accidently reuse */
 
-//        To send from SM to line follower just do the following.
-//        if(!xQueueSend(directives, &command, 100))
-//            puts("Failed!\n");
-
 //          Check queues for any information from other tasks.
 //        if(xQueueReceive(directions, type, 100))              //new directions arrived.
 //        if(xQueueReceive(WirelesstoSM, &speedChange, 100))    //set new speed
@@ -298,64 +256,87 @@ void StateMachine(void *p)
                  * else
                  *  next = error
                  */
-
-                //send command to arduino to "test" motors
+//            printf("Startup state");
+//                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
                 //Send/Receive from SNAP a comm check
-                //Send/Receive a command to djikstra task, verify its alive.
                 //errorCounter++;
-                if(xQueueReceive(directionQ, &receive, 10))
+                //if all good, go to ready.
+                next = ready;
+//                if(xQueueReceive(directionQ, &receive, 10))
+//                {
+//                    int i =0;
+//                    do{
+//                        array[i] = receive;
+//                        printf("received: %i\n", receive);
+//                        send = array[i];
+//                        i++;
+//                    }while(xQueueReceive(directionQ, &receive, 10));
+//                    next = ready;
+//                }
+                break;  //end startup-state
+
+            case ready:
+                LD.setNumber(2);
+                next = ready; //default until directions received.
+//                printf("\nSource: ");             //for debugging
+//                scanf("%i", &start);              //for debugging
+//                printf("\nEnd: ");                //for debugging
+//                scanf("%i", &end);                //for debugging
+//                initPath.source = start;          //for debugging
+//                initPath.destination = end;       //for debugging
+                travelPath.source = 1;
+                travelPath.destination = 8;
+                xQueueSend(SMtoPath, &travelPath, 10);
+//                if(xQueueReceive(newDestinationQ, &travelPath.destination, 10)){
+                //Makes a call to the pathing algorithm
+                //for a new list of directions.
+//                dijkstraFunction(travelPath);
+//
+                //Retrieve the list of directions to be sent to the line follower
+                //Contents contained within "array"
+                if(xQueueReceive(pathToSM, &receive, 10))
                 {
                     int i =0;
-        //            ssp1_ExchangeByte(0x55); //ready
                     do{
-        //                LPC_GPIO0->FIODIR |= (1 << 30);  //set as output
-        //                LPC_GPIO0->FIOSET = (1 << 30);   //initially as high
-        //                LPC_GPIO0->FIOCLR = (1 << 30);   //drive low to CS
                         array[i] = receive;
                         printf("received: %i\n", receive);
-                        send = array[i];
-        //                ssp1_ExchangeByte(send); // send to arduino
-        //                ssp1_ExchangeByte(0x00);
-        //                acked = ssp1_ExchangeByte(0x00);
-
-        //                if(acked== 0x10)
-        //                    printf("acked %x\n", acked);
                         i++;
-        //                LPC_GPIO0->FIOSET = (1 << 30);  //slave select goes High.
-        //                delay_ms(50);
-                    }while(xQueueReceive(directionQ, &receive, 10));
-                }
-                break;
+                    }while(xQueueReceive(pathToSM, &receive, 10));
 
-            case ready: LD.setNumber(2);
-                /* if(next direction == NULL)
-                 * --nextState
-                 * else
-                 * --next
-                 * check if directions queue is empty
-                 */
-                //if(direction ==NULL)//no directions for client
-                next = roam;
+                    for(int k=0; k<=i; k++)
+                    {
+                        xQueueSend(directionQ, &array[k], 10);  //send instructions to line follower.
+                    }
+                    //At this point, directions are received.
+                    //TODO: Send directions to line follower task
+
+                    next = roam;
+//                    delay_ms(100);
+                }
+//                }//end if wireless
 
                 //else //has a direction to get clients
                 //next = pickup;
-                break;
+                break;  //end ready-state
 
             case error: LD.setLeftDigit('A');
 //                errorCounter =0;
                 //send error status to the snap/computer
                 //save error info
                 //send stop command to pod
-                break;
+                break;  //end error-state
 
             case roam:  LD.setNumber(3);
                 //Traveling mode
-
+                if(xQueueReceive(lineFollowertoSM, &receive, 10))
+                {
+                    next = ready;
+                }
                 //busy bit unset, means available.
                 //if NO directions
                 //--run around for fun
-                break;
+                break;  //end roam-state
 
             case pickup:    LD.setNumber(4);
                 //Traveling mode
@@ -365,7 +346,9 @@ void StateMachine(void *p)
 
                 //else
                 //next = pickup;
-                break;
+//                next = load;
+//                delay_ms(100);
+                break;  //end pickup-state
 
             case load:  LD.setNumber(5);
                 //Waiting mode:
@@ -375,9 +358,12 @@ void StateMachine(void *p)
                 //if so
                 //next = dropoff
 
-                //else
+                //else if at station, wait.
                 //next = load
-                break;
+//                next = dropoff;
+//                delay_ms(100);
+//                vTaskDelay(10);
+                break;  //end load-state
 
             case dropoff:   LD.setNumber(6);
                 //Traveling mode
@@ -387,22 +373,93 @@ void StateMachine(void *p)
 
                 //else
                 //next = dropoff
-                break;
+
+//                next = unload;
+//                delay_ms(100);
+                break;  //end dropoff-state
 
             case unload:    LD.setNumber(7);
                 //Waiting mode
                 //To simulate unloading, send stop to line follower
                 //delay a couple miliseconds to simulate.
                 //next = ready
-                break;
+
+//                next = ready;
+//                delay_ms(100);
+                break;  //end unload-state
+
             default:
                 next = error;
-                break;
+                break;  //end default-state
         }
-        current = next;// store the next state
-        wireless.update_SNAP(loca, current,speed, ticks); //update SNAP object.
+        current = next;                                     // store the next state
+        wireless.update_SNAP(loca, current,speed, ticks);   //update SNAP object.
     }
 
 }
+
+
+/***************************************
+ * Djikstra Task (Phased out code)
+ * -------------
+ * Sends info to state machine thru
+ * -directions queue.
+ * Receives data from SM thru
+ * -SMtoPath queue.
+ ***************************************/
+
+void pathingTask(void *p)
+{
+//    From Wireless task, may receive:
+//         -New destination to calculate path for.
+//         -Some update status for the map. Maybe a route is blocked.
+//
+//    From Fat32, will receive:
+//         -Contents, the map.
+//
+//    To Fat32, will send:
+//         -New map weights. Routes may be inaccessible now.
+//
+//    To State machine, will send:
+//         -List of directions via the directionQ queue. Can be array with
+//          instructions for each "node"
+
+    path initPath;
+
+   while(1)
+   {
+       int size = 15;
+       int array[size];
+       int send = 50;
+       bool done = false;
+       bool start = true;
+       if(xQueueReceive(SMtoPath, &initPath, 100)){
+           dijkstra *mainGraph = new dijkstra;
+           makeGraph(mainGraph);
+           dijkstraFunc(mainGraph, initPath.source);
+
+           int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
+//            printf("Got the array!\n");
+           int i=0;
+           while(!done)
+           {
+               send = directions[i];
+
+               if(!start && send == 0){
+                   xQueueSend(pathToSM, &send,0);
+                   done = true;
+                   break;
+               }
+
+               xQueueSend(pathToSM, &send, 10);
+               start = false;
+               i++;
+           }
+           printf("\n\n");
+       }
+   }
+}
+
+
 
 #endif /* SUPERWAYTASKS_HPP_ */
