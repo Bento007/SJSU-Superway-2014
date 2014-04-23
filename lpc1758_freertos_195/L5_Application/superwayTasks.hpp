@@ -295,22 +295,23 @@ void StateMachine(void *p){
 //
                 //Retrieve the list of directions to be sent to the line follower
                 //Contents contained within "array"
-                if(xQueueReceive(pathToSM, &receive, 10))
+                if(xQueueReceive(pathToSM, &receive, 1000))
                 {
                     int i =0;
                     do{
                         array[i] = receive;
                         printf("received: %i\n", receive);
                         i++;
-                    }while(xQueueReceive(pathToSM, &receive, 10));
+                    }while(xQueueReceive(pathToSM, &receive, 1000));
 
-                    for(int k=0; k<=i; k++)
+                    for(int k=0; k<i; k++)
                     {
-                        xQueueSend(directionQ, &array[k], 10);  //send instructions to line follower.
+                        xQueueSend(directionQ, &array[k], 1000);  //send instructions to line follower.
+                        puts("Sending to LF");
                     }
                     //At this point, directions are received.
                     //TODO: Send directions to line follower task
-
+                    puts("Going to roam");
                     next = roam;
 //                    delay_ms(100);
                 }
@@ -329,10 +330,12 @@ void StateMachine(void *p){
 
             case roam:  LD.setNumber(3);
                 //Traveling mode
-                if(xQueueReceive(lineFollowertoSM, &receive, 10))
+                if(xQueueReceive(lineFollowertoSM, &receive, 2000))
                 {
-                    next = ready;
+                    next = error;
                 }
+//                puts("roaming");
+
                 //busy bit unset, means available.
                 //if NO directions
                 //--run around for fun
@@ -393,7 +396,7 @@ void StateMachine(void *p){
                 break;  //end default-state
         }
         current = next;                                     // store the next state
-        wireless.update_SNAP(loca, current,speed, ticks);   //update SNAP object.
+//        wireless.update_SNAP(loca, current,speed, ticks);   //update SNAP object.
     }
 
 }
@@ -441,20 +444,22 @@ void pathingTask(void *p)
            int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
 //            printf("Got the array!\n");
            int i=0;
-           while(!done)
-           {
-               send = directions[i];
 
-               if(!start && send == 0){
-                   xQueueSend(pathToSM, &send,0);
-                   done = true;
-                   break;
-               }
+        while(!done)
+        {
+            send = directions[i];
+            printf("Printing before SM: %i\n", send);
 
-               xQueueSend(pathToSM, &send, 10);
-               start = false;
-               i++;
-           }
+            if(!start && send == 0){
+                xQueueSend(pathToSM, &send,0);
+                done = true;
+                break;
+            }
+
+            xQueueSend(pathToSM, &send, 10);
+            start = false;
+            i++;
+        }
            printf("\n\n");
        }
    }

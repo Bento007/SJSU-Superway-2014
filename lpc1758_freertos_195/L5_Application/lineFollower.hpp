@@ -106,7 +106,7 @@ void loop() {    // all sensors are active low
 
       RCmode(); //stays here until need to change.
 
-      xQueueReceive(instructions, &pop, 500);
+      xQueueReceive(directionQ, &pop, 500);
 
       if(pop==2){
         turnRight();
@@ -116,6 +116,8 @@ void loop() {    // all sensors are active low
       }
       if(pop==0){
         station();
+//        int i =9;
+//        xQueueSend(lineFollowertoSM, &i, 10);
       }
   }
 }

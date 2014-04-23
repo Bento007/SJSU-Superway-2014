@@ -12,6 +12,11 @@ int main()
     SMtoPath = xQueueCreate(1, sizeof(path));
     directionQ = xQueueCreate(20, sizeof(int));
     newDestinationQ = xQueueCreate(1, sizeof(uint32_t));
+    pathToSM = xQueueCreate(20, sizeof(int));
+    lineFollowertoSM= xQueueCreate(1, sizeof(int));
+    WirelesstoSM = xQueueCreate(1, sizeof(int));
+    SMtoLineFollower = xQueueCreate(1, sizeof(int));
+
     //TODO: create other queues, if used.
 //    puts("In main, initializing Wireless Task");
 
