@@ -49,7 +49,30 @@ void lineFollowerTask(void *p)
     }
 }
 
+/**********************************
+ * update Task
+ * -------------
+ * Receives data from state machine
+ * -through SMtoWireless queue.
+ * Can send data to state machine
+ * -through WirelesstoSM queue.
+ *********************************/
+void updateTask(void *p)
+{
+    // Initialized variables
+    SNAP& wireless = SNAP::getInstance();
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = 100;
 
+    xLastWakeTime = xTaskGetTickCount();
+
+    while(1)
+    {
+        wireless.send_Update();
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        printf("update: %i\n",wireless.getLastUpdateTime());
+    }
+}
 /**********************************
  * Wireless Task
  * -------------
@@ -270,6 +293,7 @@ void StateMachine(void *p){
                 //Send/Receive from SNAP a comm check
                 //errorCounter++;
                 //if all good, go to ready.
+//                travelPath.source = 1;            //for debugging
                 next = ready;
                 break;  //end startup-state
 
@@ -283,40 +307,42 @@ void StateMachine(void *p){
 //                scanf("%i", &end);                //for debugging
 //                travelPath.source = start;          //for debugging
 //                travelPath.destination = end;       //for debugging
-                travelPath.source = 1;            //for debugging
+//                travelPath.source = 1;            //for debugging
 //                travelPath.destination = 8;       //for debugging
 
-            if(xQueueReceive(newDestinationQ, &travelPath.destination, 10)){
-                puts("Destination received");
-                xQueueSend(SMtoPath, &travelPath, 1);
-
-                //Retrieve the list of directions to be sent to the line follower
-                //Contents contained within "array"
-                if(xQueueReceive(pathToSM, &receive, 10))
+            if(xQueueReceive(newDestinationQ, &travelPath.destination, 10))
                 {
-                    int i =0;
+//                    puts("Destination received");
+                    xQueueSend(SMtoPath, &travelPath, 1);
 
-                    do{
-                        array[i] = receive;
-                        printf("received: %i\n", receive);
-                        i++;
-                    }while(xQueueReceive(pathToSM, &receive, 10));
-
-                    puts("Sending to LF");
-
-                    for(int k=0; k<i; k++)
+                    //Retrieve the list of directions to be sent to the line follower
+                    //Contents contained within "array"
+                    if(xQueueReceive(pathToSM, &receive, 10))
                     {
-                        printf("Sending %i\n", array[k]);
-                        xQueueSend(directionQ, &array[k], 0);  //send instructions to line follower.
-                    }
+                        int i =0;
 
-                    //At this point, directions are received.
-                    //TODO: Send directions to line follower task
-                    puts("Going to roam");
-                    next = roam;
-//                    delay_ms(100);
-                }
-                }//end if wireless
+                        do{
+                            array[i] = receive;
+                            printf("received: %i\n", receive);
+                            i++;
+                        }while(xQueueReceive(pathToSM, &receive, 10));
+
+                        puts("Sending to LF");
+
+                        for(int k=0; k<i; k++)
+                        {
+                            printf("Sending %i\n", array[k]);
+                            xQueueSend(directionQ, &array[k], 0);  //send instructions to line follower.
+                        }
+
+                        travelPath.source = travelPath.destination;
+                        //At this point, directions are received.
+                        //TODO: Send directions to line follower task
+                        puts("Going to roam");
+                        next = roam;
+//                        delay_ms(100);
+                    }
+                }//end if wireless received
 
                 //else //has a direction to get clients
                 //next = pickup;
@@ -333,7 +359,7 @@ void StateMachine(void *p){
                 //Traveling mode
                 if(xQueueReceive(lineFollowertoSM, &receive, 2000))
                 {
-                    delay_ms(100);
+//                    delay_ms(100);
                     puts("Going to ready state");
                     next = pickup;
                 }

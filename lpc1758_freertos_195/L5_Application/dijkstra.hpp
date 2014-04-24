@@ -105,7 +105,7 @@ void makeGraph(struct dijkstra* graph)
             /* ****** END: STATION 1 ****** */
             /********************************/
 
-            // M2 to F1
+            // M2 to M1
             setEdge(graph, 2, 3, 3,10,merge,2,1,false,true,false,false);
 //            graph->edgeWeight[2][3].weight= 3;
 //            graph->edgeWeight[2][3].station= false;
@@ -114,21 +114,14 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[2][3].right= false;
 
 
-            // F1 going to S3 via F3
-            setEdge(graph, 3, 4, 6,10,fork,1,3,false,false,true,false);
+            // S1 going to S3 via M1
+            // M1 to F3
+            setEdge(graph, 3, 4, 6,10,merge,1,3,false,true,false,false);
 //            graph->edgeWeight[3][4].weight= 6;
 //            graph->edgeWeight[3][4].station= false;
-//            graph->edgeWeight[3][4].merge= false;
-//            graph->edgeWeight[3][4].fork= true;
+//            graph->edgeWeight[3][4].merge= true;
+//            graph->edgeWeight[3][4].fork= false;
 //            graph->edgeWeight[3][4].right= false;
-
-            // F1 going to S2 via F2
-            setEdge(graph, 3, 7, 4,10,fork,1,2,false,false,true,true);
-//            graph->edgeWeight[3][7].weight= 4;
-//            graph->edgeWeight[3][7].station= false;
-//            graph->edgeWeight[3][7].merge= false;
-//            graph->edgeWeight[3][7].fork= true;
-//            graph->edgeWeight[3][7].right= true;
 
             /********************************/
             /* ***** BEGIN: STATION 2 ***** */
@@ -168,7 +161,7 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // F3 to S3
-            setEdge(graph, 4, 5, 2,10,fork,2,3,false,false,true,true);
+            setEdge(graph, 4, 5, 2,10,fork,3,3,false,false,true,true);
 //            graph->edgeWeight[4][5].weight= 2;
 //            graph->edgeWeight[4][5].station= false;
 //            graph->edgeWeight[4][5].merge= false;
@@ -184,7 +177,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[5][6].right= false;
 
             // F3 to M4
-            setEdge(graph, 4, 6, 5,10,fork,3,4,false,false,true,false);
+            setEdge(graph, 4, 6, 3,10,fork,3,4,false,false,true,false);
 //            graph->edgeWeight[4][6].weight= 5;
 //            graph->edgeWeight[4][6].station= false;
 //            graph->edgeWeight[4][6].merge= false;
@@ -195,15 +188,7 @@ void makeGraph(struct dijkstra* graph)
             /* ****** END: STATION 3 ****** */
             /********************************/
 
-            // M3 to M5
-            setEdge(graph, 9, 10, 3,10,merge,3,5,false,true,false,false);
-//            graph->edgeWeight[9][10].weight= 3;
-//            graph->edgeWeight[9][10].station= false;
-//            graph->edgeWeight[9][10].merge= true;
-//            graph->edgeWeight[9][10].fork= false;
-//            graph->edgeWeight[9][10].right= false;
-
-            // M4 to M5
+            // M4 to F5
             setEdge(graph, 6, 10, 8,10,merge,4,5,false,true,false,false);
 //            graph->edgeWeight[6][10].weight= 8;
 //            graph->edgeWeight[6][10].station= false;
@@ -211,13 +196,21 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[6][10].fork= false;
 //            graph->edgeWeight[6][10].right= false;
 
-            // M5 to F4
-            setEdge(graph, 10, 11, 7,10,merge,5,4,false,true,false,false);
+            // F5 to F4
+            setEdge(graph, 10, 11, 7,10,fork,5,4,false,false,true,false);
 //            graph->edgeWeight[10][11].weight= 7;
 //            graph->edgeWeight[10][11].station= false;
-//            graph->edgeWeight[10][11].merge= true;
-//            graph->edgeWeight[10][11].fork= false;
+//            graph->edgeWeight[10][11].merge= false;
+//            graph->edgeWeight[10][11].fork=true;
 //            graph->edgeWeight[10][11].right= false;
+
+            // F5 TO F2
+            // graph, i, j, weight, ticks, type, source, destination, station, merge, fork, right
+            setEdge(graph, 10, 7, 3, 10, fork, 5, 2, false, false, true, true);
+
+            // M3 TO M1
+            setEdge(graph, 9, 3, 5, 10, merge, 3, 1, false, true, false, false);
+
 
             /*Checking what node type is: Station, Merge, or Fork*/
             /*for (i = 1; i <= vertices; i++)
