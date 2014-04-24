@@ -72,10 +72,10 @@ void lineFollowerTask(void *p)
          temp2 = 0;
          if(!wireless.RXempty())
          {
-//             puts("Inside if");
+             puts("Inside if");
              switch(wireless.get_nextCMD())
              {
-//                 vTaskDelay(100);
+                 vTaskDelay(100);
                  case 'U'://get a graph update and send it to pathing //TODO: make graph dynamic
                      wireless.get_TrackUpdate(&temp1, &temp2);
                      //TODO: add shared queue to send to pathing
@@ -96,17 +96,17 @@ void lineFollowerTask(void *p)
                      //TODO: add shared queue to send to pathing
                      break;
                  case 'D'://give pathingTask new destination//TODO: check for valid destination inputs
-//                     puts("Case D");
+                     puts("Case D");
                      //TODO: add shared queue to send to pathing
                      if(wireless.get_newDest(&temp1))
                      {
 //                     Send new destination value to the State Machine
-//                         puts("Got Value!");
-//                         printf("%i\n", temp1);
+                         puts("Got Value!");
+                         printf("%i\n", temp1);
                          xQueueSend(newDestinationQ, &temp1, 100);
                      }
-//                     else
-//                         puts("Failed to get_newDest");
+                     else
+                         puts("Failed to get_newDest");
                      break;
                  default://send to SNAP invalid CMD
 //                     puts("inside switch");
@@ -221,7 +221,7 @@ void StateMachine(void *p){
 //    podStatus pod;                          //Is this needed???
     int array[11], receive;
     path_t travelPath;
-//    int start, end;
+    int start, end;
 
 
     /*
@@ -264,24 +264,13 @@ void StateMachine(void *p){
                  *  next = error
                  */
                 puts("Startup State");
-//            printf("Startup state");
+//                printf("Startup state");
 //                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
                 //Send/Receive from SNAP a comm check
                 //errorCounter++;
                 //if all good, go to ready.
                 next = ready;
-//                if(xQueueReceive(directionQ, &receive, 10))
-//                {
-//                    int i =0;
-//                    do{
-//                        array[i] = receive;
-//                        printf("received: %i\n", receive);
-//                        send = array[i];
-//                        i++;
-//                    }while(xQueueReceive(directionQ, &receive, 10));
-//                    next = ready;
-//                }
                 break;  //end startup-state
 
             case ready:
@@ -292,8 +281,8 @@ void StateMachine(void *p){
 //                scanf("%i", &start);              //for debugging
 //                printf("\nEnd: ");                //for debugging
 //                scanf("%i", &end);                //for debugging
-//                initPath.source = start;          //for debugging
-//                initPath.destination = end;       //for debugging
+//                travelPath.source = start;          //for debugging
+//                travelPath.destination = end;       //for debugging
                 travelPath.source = 1;            //for debugging
 //                travelPath.destination = 8;       //for debugging
 
@@ -346,7 +335,7 @@ void StateMachine(void *p){
                 {
                     delay_ms(100);
                     puts("Going to ready state");
-                    next = ready;
+                    next = pickup;
                 }
 //                puts("roaming");
 
@@ -363,7 +352,7 @@ void StateMachine(void *p){
 
                 //else
                 //next = pickup;
-//                next = load;
+                next = load;
 //                delay_ms(100);
                 break;  //end pickup-state
 
@@ -377,7 +366,7 @@ void StateMachine(void *p){
 
                 //else if at station, wait.
                 //next = load
-//                next = dropoff;
+                next = dropoff;
 //                delay_ms(100);
 //                vTaskDelay(10);
                 break;  //end load-state
@@ -389,7 +378,7 @@ void StateMachine(void *p){
                 //go to unload
 
                 //else
-                //next = dropoff
+                next = ready;
 
 //                next = unload;
 //                delay_ms(100);

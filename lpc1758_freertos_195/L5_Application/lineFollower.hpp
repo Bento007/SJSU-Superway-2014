@@ -106,30 +106,43 @@ void loop() {    // all sensors are active low
   int gostraight=1;
   int gostation=0;
   int pop;
+  int skip=0;
 
   while(1){
 
-//      RCmode(); //stays here until need to change.
+      RCmode(); //stays here until need to change.
 
       if(xQueueReceive(directionQ, &pop, 500)){
-      printf("LF %i", pop);
-      if(pop == 0){
-          puts("\n");
-          xQueueSend(lineFollowertoSM, &pop, 10);
+//      printf("LF %i", pop);
+//      if(pop == 0){
+//          puts("\n");
+//          xQueueSend(lineFollowertoSM, &pop, 10);
+//      }
+//      debuggerFunc();
+//      }
+
+      if(pop==2){
+        turnRight();
       }
-      debuggerFunc();
+      if(pop==1){
+
+          if(skip==1)
+          {
+              turnRight();
+          }
+          else
+          {
+              straight();
+              skip++;
+          }
+
       }
-//      if(pop==2){
-//        turnRight();
-//      }
-//      if(pop==1){
-//        straight();
-//      }
-//      if(pop==0){
-//        station();
-////        int i =9;
-////        xQueueSend(lineFollowertoSM, &i, 10);
-//      }
+      if(pop==0){
+        station();
+        skip =0;
+        xQueueSend(lineFollowertoSM, &pop, 10);
+      }
+  }//end if queue
   }
 }
 
@@ -164,8 +177,8 @@ void station(){
     LD.setNumber(0);
     LPC_GPIO0->FIOCLR = (1 << aMUX);        // 0b00 = RC mode
     LPC_GPIO0->FIOCLR = (1 << bMUX);
-    delay_ms(5000);
-    straight();
+//    delay_ms(5000);
+//    straight();
 }
 
 void RCmode(){
