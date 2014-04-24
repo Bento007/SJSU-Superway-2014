@@ -19,8 +19,8 @@
 #ifndef LINEFOLLOWER_HPP_
 #define LINEFOLLOWER_HPP_
 
-#include "tasks.hpp"
-#include "examples/examples.hpp"
+//#include "tasks.hpp"
+//#include "examples/examples.hpp"
 #include "utilities.h"
 #include <stdint.h>
 #include <stdio.h>

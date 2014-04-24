@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "tasks.hpp"
-#include "examples/examples.hpp"
+//#include "tasks.hpp"
+//#include "examples/examples.hpp"
 #include "superwayTasks.hpp"
 #include "dijkstra.hpp"
 #include "shared_queues.hpp"
@@ -9,7 +9,7 @@
 int main()
 {
     //create the Queues in tasks...
-    SMtoPath = xQueueCreate(1, sizeof(path));
+    SMtoPath = xQueueCreate(1, sizeof(path_t));
     directionQ = xQueueCreate(20, sizeof(int));
     newDestinationQ = xQueueCreate(1, sizeof(uint32_t));
     pathToSM = xQueueCreate(20, sizeof(int));

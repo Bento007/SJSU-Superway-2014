@@ -19,19 +19,19 @@ using namespace std;
 #define INF 999
 #define vertices 11
 
-typedef struct{
-        int source;
-        int destination;
-}path;
+//typedef struct{
+//        int source;
+//        int destination;
+//}path;
 
-struct gNode
-{
-    int value;
-    bool station;
-    bool merge;
-    bool fork;
-    bool right;
-};
+//struct gNode
+//{
+//    int value;
+//    bool station;
+//    bool merge;
+//    bool fork;
+//    bool right;
+//};
 struct dijkstra
 {
     gNode edgeWeight[MAX][MAX];
@@ -40,13 +40,26 @@ struct dijkstra
         visited[MAX];
 };
 
-    void initialize(int);
-    void makeGraph(struct dijkstra*);
-    void dijkstraFunc(struct dijkstra*, int);
-    int* print(struct dijkstra*, int, int, int, int);
-    void dijkstraFunction(path);
-
-
+void initialize(int);
+void makeGraph(struct dijkstra*);
+void dijkstraFunc(struct dijkstra*, int);
+int* print(struct dijkstra*, int, int, int, int);
+void dijkstraFunction(path_t);
+void setEdge(struct dijkstra *graphQ,int i,int j, uint32_t weight,
+        uint32_t ticks, track_t type, uint32_t source,
+        uint32_t destination, bool station, bool merge, bool fork,
+        bool right)
+{
+    graphQ->edgeWeight[i][j].weight= weight;
+    graphQ->edgeWeight[i][j].ticks = ticks;
+    graphQ->edgeWeight[i][j].type = type;
+    graphQ->edgeWeight[i][j].name.source = source;
+    graphQ->edgeWeight[i][j].name.destination = destination;
+    graphQ->edgeWeight[i][j].station= station;
+    graphQ->edgeWeight[i][j].merge= merge;
+    graphQ->edgeWeight[i][j].fork= fork;
+    graphQ->edgeWeight[i][j].right= right;
+}
 
 void makeGraph(struct dijkstra* graph)
 {
@@ -56,7 +69,7 @@ void makeGraph(struct dijkstra* graph)
                 {
                     for (j = 1; j <= vertices; j++)
                     {
-                        graph->edgeWeight[i][j].value=999;
+                        graph->edgeWeight[i][j].weight=999;
                     }
                 }
 
@@ -65,76 +78,85 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // F4 to S1
-            graph->edgeWeight[11][1].value= 2;
-            graph->edgeWeight[11][1].station= false;
-            graph->edgeWeight[11][1].merge= false;
-            graph->edgeWeight[11][1].fork= true;
-            graph->edgeWeight[11][1].right= true;
+            setEdge(graph, 11, 1, 2,10,fork,4,1,false,false,true,true);
+//            graph->edgeWeight[11][1].weight= 2;
+//            graph->edgeWeight[11][1].station= false;
+//            graph->edgeWeight[11][1].merge= false;
+//            graph->edgeWeight[11][1].fork= true;
+//            graph->edgeWeight[11][1].right= true;
 
             // S1 to M2
-            graph->edgeWeight[1][2].value=2;
-            graph->edgeWeight[1][2].station=true;
-            graph->edgeWeight[1][2].merge=false;
-            graph->edgeWeight[1][2].fork=false;
-            graph->edgeWeight[1][2].right=false;
+            setEdge(graph, 1, 2, 2,10,stations,1,2,true,false,false,false);
+//            graph->edgeWeight[1][2].weight=2;
+//            graph->edgeWeight[1][2].station=true;
+//            graph->edgeWeight[1][2].merge=false;
+//            graph->edgeWeight[1][2].fork=false;
+//            graph->edgeWeight[1][2].right=false;
 
             // F4 to M2
-            graph->edgeWeight[11][2].value= 5;
-            graph->edgeWeight[11][2].station= false;
-            graph->edgeWeight[11][2].merge= false;
-            graph->edgeWeight[11][2].fork= true;
-            graph->edgeWeight[11][2].right= false;
+            setEdge(graph, 11, 2, 5,10,fork,4,2,false,false,true,false);
+//            graph->edgeWeight[11][2].weight= 5;
+//            graph->edgeWeight[11][2].station= false;
+//            graph->edgeWeight[11][2].merge= false;
+//            graph->edgeWeight[11][2].fork= true;
+//            graph->edgeWeight[11][2].right= false;
 
             /********************************/
             /* ****** END: STATION 1 ****** */
             /********************************/
 
             // M2 to F1
-            graph->edgeWeight[2][3].value= 3;
-            graph->edgeWeight[2][3].station= false;
-            graph->edgeWeight[2][3].merge= true;
-            graph->edgeWeight[2][3].fork= false;
-            graph->edgeWeight[2][3].right= false;
+            setEdge(graph, 2, 3, 3,10,merge,2,1,false,true,false,false);
+//            graph->edgeWeight[2][3].weight= 3;
+//            graph->edgeWeight[2][3].station= false;
+//            graph->edgeWeight[2][3].merge= true;
+//            graph->edgeWeight[2][3].fork= false;
+//            graph->edgeWeight[2][3].right= false;
 
 
             // F1 going to S3 via F3
-            graph->edgeWeight[3][4].value= 6;
-            graph->edgeWeight[3][4].station= false;
-            graph->edgeWeight[3][4].merge= false;
-            graph->edgeWeight[3][4].fork= true;
-            graph->edgeWeight[3][4].right= false;
+            setEdge(graph, 3, 4, 6,10,fork,1,3,false,false,true,false);
+//            graph->edgeWeight[3][4].weight= 6;
+//            graph->edgeWeight[3][4].station= false;
+//            graph->edgeWeight[3][4].merge= false;
+//            graph->edgeWeight[3][4].fork= true;
+//            graph->edgeWeight[3][4].right= false;
 
             // F1 going to S2 via F2
-            graph->edgeWeight[3][7].value= 4;
-            graph->edgeWeight[3][7].station= false;
-            graph->edgeWeight[3][7].merge= false;
-            graph->edgeWeight[3][7].fork= true;
-            graph->edgeWeight[3][7].right= true;
+            setEdge(graph, 3, 7, 4,10,fork,1,2,false,false,true,true);
+//            graph->edgeWeight[3][7].weight= 4;
+//            graph->edgeWeight[3][7].station= false;
+//            graph->edgeWeight[3][7].merge= false;
+//            graph->edgeWeight[3][7].fork= true;
+//            graph->edgeWeight[3][7].right= true;
 
             /********************************/
             /* ***** BEGIN: STATION 2 ***** */
             /********************************/
 
             // F2 to S2
-            graph->edgeWeight[7][8].value= 2;
-            graph->edgeWeight[7][8].station= false;
-            graph->edgeWeight[7][8].merge= false;
-            graph->edgeWeight[7][8].fork= true;
-            graph->edgeWeight[7][8].right= true;
+            setEdge(graph, 7, 8, 2,10,fork,2,2,false,false,true,true);
+//            graph->edgeWeight[7][8].weight= 2;
+//            graph->edgeWeight[7][8].station= false;
+//            graph->edgeWeight[7][8].merge= false;
+//            graph->edgeWeight[7][8].fork= true;
+//            graph->edgeWeight[7][8].right= true;
 
             // S2 to M3
-            graph->edgeWeight[8][9].value= 2;
-            graph->edgeWeight[8][9].station= true;
-            graph->edgeWeight[8][9].merge= false;
-            graph->edgeWeight[8][9].fork= false;
-            graph->edgeWeight[8][9].right= false;
+            setEdge(graph, 8, 9, 2,10,stations,2,3,true,false,false,false);
+//            graph->edgeWeight[8][9].weight= 2;
+//            graph->edgeWeight[8][9].station= true;
+//            graph->edgeWeight[8][9].merge= false;
+//            graph->edgeWeight[8][9].fork= false;
+//            graph->edgeWeight[8][9].right= false;
 
             // F2 to M3
-            graph->edgeWeight[7][9].value= 5;
-            graph->edgeWeight[7][9].station= false;
-            graph->edgeWeight[7][9].merge= false;
-            graph->edgeWeight[7][9].fork= true;
-            graph->edgeWeight[7][9].right= false;
+            setEdge(graph, 7, 9, 5,10,fork,2,3,false,false,true,false);
+//            graph->edgeWeight[7][9].weight= 5;
+//            graph->edgeWeight[7][9].station= false;
+//            graph->edgeWeight[7][9].merge= false;
+//            graph->edgeWeight[7][9].fork= true;
+//            graph->edgeWeight[7][9].right= false;
 
             /********************************/
             /* ****** END: STATION 2 ****** */
@@ -146,50 +168,56 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // F3 to S3
-            graph->edgeWeight[4][5].value= 2;
-            graph->edgeWeight[4][5].station= false;
-            graph->edgeWeight[4][5].merge= false;
-            graph->edgeWeight[4][5].fork= true;
-            graph->edgeWeight[4][5].right= true;
+            setEdge(graph, 4, 5, 2,10,fork,2,3,false,false,true,true);
+//            graph->edgeWeight[4][5].weight= 2;
+//            graph->edgeWeight[4][5].station= false;
+//            graph->edgeWeight[4][5].merge= false;
+//            graph->edgeWeight[4][5].fork= true;
+//            graph->edgeWeight[4][5].right= true;
 
             // S3 to M4
-            graph->edgeWeight[5][6].value= 2;
-            graph->edgeWeight[5][6].station= true;
-            graph->edgeWeight[5][6].merge= false;
-            graph->edgeWeight[5][6].fork= false;
-            graph->edgeWeight[5][6].right= false;
+            setEdge(graph, 5, 6, 2,10,stations,3,4,true,false,false,false);
+//            graph->edgeWeight[5][6].weight= 2;
+//            graph->edgeWeight[5][6].station= true;
+//            graph->edgeWeight[5][6].merge= false;
+//            graph->edgeWeight[5][6].fork= false;
+//            graph->edgeWeight[5][6].right= false;
 
             // F3 to M4
-            graph->edgeWeight[4][6].value= 5;
-            graph->edgeWeight[4][6].station= false;
-            graph->edgeWeight[4][6].merge= false;
-            graph->edgeWeight[4][6].fork= true;
-            graph->edgeWeight[4][6].right= false;
+            setEdge(graph, 4, 6, 5,10,fork,3,4,false,false,true,false);
+//            graph->edgeWeight[4][6].weight= 5;
+//            graph->edgeWeight[4][6].station= false;
+//            graph->edgeWeight[4][6].merge= false;
+//            graph->edgeWeight[4][6].fork= true;
+//            graph->edgeWeight[4][6].right= false;
 
             /********************************/
             /* ****** END: STATION 3 ****** */
             /********************************/
 
             // M3 to M5
-            graph->edgeWeight[9][10].value= 3;
-            graph->edgeWeight[9][10].station= false;
-            graph->edgeWeight[9][10].merge= true;
-            graph->edgeWeight[9][10].fork= false;
-            graph->edgeWeight[9][10].right= false;
+            setEdge(graph, 9, 10, 3,10,merge,3,5,false,true,false,false);
+//            graph->edgeWeight[9][10].weight= 3;
+//            graph->edgeWeight[9][10].station= false;
+//            graph->edgeWeight[9][10].merge= true;
+//            graph->edgeWeight[9][10].fork= false;
+//            graph->edgeWeight[9][10].right= false;
 
             // M4 to M5
-            graph->edgeWeight[6][10].value= 8;
-            graph->edgeWeight[6][10].station= false;
-            graph->edgeWeight[6][10].merge= true;
-            graph->edgeWeight[6][10].fork= false;
-            graph->edgeWeight[6][10].right= false;
+            setEdge(graph, 6, 10, 8,10,merge,4,5,false,true,false,false);
+//            graph->edgeWeight[6][10].weight= 8;
+//            graph->edgeWeight[6][10].station= false;
+//            graph->edgeWeight[6][10].merge= true;
+//            graph->edgeWeight[6][10].fork= false;
+//            graph->edgeWeight[6][10].right= false;
 
             // M5 to F4
-            graph->edgeWeight[10][11].value= 7;
-            graph->edgeWeight[10][11].station= false;
-            graph->edgeWeight[10][11].merge= true;
-            graph->edgeWeight[10][11].fork= false;
-            graph->edgeWeight[10][11].right= false;
+            setEdge(graph, 10, 11, 7,10,merge,5,4,false,true,false,false);
+//            graph->edgeWeight[10][11].weight= 7;
+//            graph->edgeWeight[10][11].station= false;
+//            graph->edgeWeight[10][11].merge= true;
+//            graph->edgeWeight[10][11].fork= false;
+//            graph->edgeWeight[10][11].right= false;
 
             /*Checking what node type is: Station, Merge, or Fork*/
             /*for (i = 1; i <= vertices; i++)
@@ -232,7 +260,7 @@ void initialize(struct dijkstra* graph, int src)
     /*src node = 0*/
     for (int i = 1; i <= vertices; i++)
     {
-        graph->nWeight[i] = graph->edgeWeight[src][i].value;
+        graph->nWeight[i] = graph->edgeWeight[src][i].weight;
         graph->visited[i] = 0;
         graph->curPosition[i] = src;
     }
@@ -265,10 +293,10 @@ void dijkstraFunc(struct dijkstra* graph, int src)
         graph->visited[u] = 1;
 
         for (int v = 1; v <= vertices; v++)
-            if (!graph->visited[v] && (graph->nWeight[u] + graph->edgeWeight[u][v].value < graph->nWeight[v]))
+            if (!graph->visited[v] && (graph->nWeight[u] + graph->edgeWeight[u][v].weight < graph->nWeight[v]))
             {
                 // assigns new value into vertex
-                graph->nWeight[v] = graph->nWeight[u] + graph->edgeWeight[u][v].value;
+                graph->nWeight[v] = graph->nWeight[u] + graph->edgeWeight[u][v].weight;
                 graph->curPosition[v] = u;
             }
     }
@@ -284,6 +312,7 @@ void dijkstraFunc(struct dijkstra* graph, int src)
 int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
 {
     stack<int> mystack, pDir;
+    stack<gNode> visitedNodes;
 
     int i, k, node1, node2;
 
@@ -303,7 +332,6 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
             while (graph->curPosition[k] != src)
             {
                 k = graph->curPosition[k];
-
 
                 node2 = mystack.top();
                 /* Stores "Next" node (int) value so that I can access the node object! */
@@ -326,6 +354,7 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
                     pDir.push(1);
                 }
 
+                visitedNodes.push(graph->edgeWeight[node1][node2]);//TODO: trying to get nodes info to statemachine
             }//end while loop
 
             /*
@@ -345,6 +374,8 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
                 pDir.push(1);
             }
 
+            visitedNodes.push(graph->edgeWeight[src][node2]);//TODO: trying to get nodes info to statemachine
+
             printf("\nTravel distance (total edge weight traveled) : %i", graph->nWeight[i]);
             printf("\n\n");
 
@@ -352,27 +383,27 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
 
     }//end for-loop
 
-        printf("Node traversal: ");
-        while(!mystack.empty())
-        {
-            printf("%i >> ", mystack.top());
-            mystack.pop();
-        }
-        printf("Done!\n\n");
-        printf("pDir size: %i\n\n", pDir.size());
-        int arrSize = pDir.size();
-        int *arrayDir = array;
-        int index=0;
+    printf("Node traversal: ");
+    while(!mystack.empty())
+    {
+        printf("%i >> ", mystack.top());
+        mystack.pop();
+    }
+    printf("Done!\n\n");
+    printf("pDir size: %i\n\n", pDir.size());
+    int arrSize = pDir.size();
+    int *arrayDir = array;
+    int index=0;
 
 //        pDir.push(0);
-        printf(" 0 = stop \n 1 = forward \n 2 = right \n Directions traversal: ");
-        while(!pDir.empty())
-        {
-            printf("%i", pDir.top());
-            arrayDir[index]=pDir.top();
-            index++;
-            pDir.pop();
-        }
+    printf(" 0 = stop \n 1 = forward \n 2 = right \n Directions traversal: ");
+    while(!pDir.empty())
+    {
+        printf("%i", pDir.top());
+        arrayDir[index]=pDir.top();
+        index++;
+        pDir.pop();
+    }
 //        index =0;
 //        printf("\n\nArray Contents: ", index);
 //        while(index <= arrSize)
@@ -380,9 +411,9 @@ int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
 //            printf("%i ", arrayDir[index]);
 //            index++;
 //        }
-        printf("\nEnd Print\n");
+    printf("\nEnd Print\n");
 
-     return arrayDir;
+    return arrayDir;
 }
 
 //void dijkstraFunction(path initPath){
