@@ -48,7 +48,7 @@ bool SNAP::send_Update()
     //add semaphore
     Uart3& wireless = Uart3::getInstance();
 //    if(wireless.printf("U%i:%i:%i,%i,%i,%i\n",time.hour, time.min, time.sec, location, status,speed))
-    if(wireless.printf("U%i,%i,%i,%i,%i,%i\n",mLastActivityTime, location, status,speed,ticks,ticks/speed))
+    if(wireless.printf("U%i,%i,%i,%i,%i,%i,%i\n",mLastActivityTime, location,destination, status,speed,ticks,ticks/speed))
     {
         resetUpdateTime();
         return true;

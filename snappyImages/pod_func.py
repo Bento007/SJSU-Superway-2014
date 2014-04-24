@@ -177,7 +177,7 @@ def yieldRPC(remoteYields): #Status: WIP
 #     print data  #prints global data value
 def getDest():  #status: Done, Tested
     """prints the current destination"""
-    print "D ",cDest
+    print "D",cDest
 def getETM():
     print "M",cETM
 def getGlobals():  #status: Done, Tested
@@ -243,7 +243,7 @@ def setStatus(x,y):
     global cStat, cLoca
     cStat = x
     cLoca = y
-def setLocals(Time, Loca, Stat, Sped,Tick, ETM): #Status: Done, not tested
+def setLocals(Time, Loca, Dest, Stat, Sped,Tick, ETM): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
     global cDest, nDest, cTime, cLoca, cSped, cStat,cTick, yields, cETM
@@ -254,6 +254,8 @@ def setLocals(Time, Loca, Stat, Sped,Tick, ETM): #Status: Done, not tested
         cStat = Stat
         cTick = Tick
         cETM = ETM
+        if cDest != Dest:
+            getDest()
         #if cLoca == cDest & cStat == ready: #check if at location
         if readyForNextDest(): #check if at location
             cDest = nDest
@@ -312,13 +314,13 @@ def printStatus():#sends the stats of the pod to the master.
 def readyForNextDest():
     """ checks if the pod is ready to recieve a new destination"""
     if cLoca == cDest & cStat == dropoff:
-        return true
+        return 1
     else:
-        return false
+        return 0
 def readyForNewRoute():
     """Check id the pod is reday to recieve a new destination
     from the master"""
     if cLoca == cDest & cStat == ready & nDest == 0:
-        return true
+        return 1
     else:
-        return false 
+        return 0 
