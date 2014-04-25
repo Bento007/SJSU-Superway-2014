@@ -24,33 +24,26 @@
  *
  * @note  printf of %f may be turned off to save memory, this can be configured at sys_config.h
  */
-#include "tasks.hpp"
-#include "examples/examples.hpp"
-#include "utilities.h"
+//#include "tasks.hpp"
+//#include "examples/examples.hpp"
+//#include "utilities.h"
 #include <stdint.h>
-#include <stdio.h>
-#include <sys_config.h>
-#include "../L2_Drivers/lpc_pwm.hpp"
-#include "io.hpp"
-#include "lpc_sys.h"
-#include "soft_timer.hpp"
-#include "../L2_Drivers/eint.h"
-#include <printf_lib.h>
-#include "LED_Display.hpp"
-//#include "linefollower.hpp"//
+//#include <stdio.h>
+//#include <sys_config.h>
+//#include "lpc_pwm.hpp"
+//#include "io.hpp"
+//#include "lpc_sys.h"
+//#include "soft_timer.hpp"
+//#include "eint.h"
+//#include <printf_lib.h>
 #include "SmartLineFollower.hpp"
 
 int main(void)
 {
 	instructions = xQueueCreate(10, sizeof(int));
-	// 0-stops, 1-forward, 2- turn
-	// 1,
+
 	setup();
 	loop();
-	//	scheduler_add_task(new terminalTask(PRIORITY_HIGH));
-	scheduler_add_task(new sensorMotorTask(PRIORITY_MEDIUM));
-
-    scheduler_start(true); ///< This shouldn't return
     return -1;
 }
 

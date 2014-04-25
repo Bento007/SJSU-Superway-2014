@@ -9,7 +9,6 @@ extern "C" {
 	#include "lpc_sys.h"
 
 
-
 	/// The type of the interrupt for the port pin.
 	typedef enum {
 		eint_rising_edge, ///< Interrupt on rising edge
