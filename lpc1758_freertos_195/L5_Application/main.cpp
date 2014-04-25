@@ -20,14 +20,16 @@ int main()
     ticks_sem = xSemaphoreCreateBinary();
 
     //TODO: create other queues, if used.
-    if(debug)   puts("In main, initializing Wireless Task");
+#if DEBUG
+    puts("In main, initializing Wireless Task");
+#endif
 
 
-    xTaskCreate(wirelessTask, (const char*) "WirelessTask", STACK_BYTES(2048), 0, 2, 0);
-    xTaskCreate(StateMachine, (const char*) "SMTask", STACK_BYTES(2048), 0, 1, 0);
-    xTaskCreate(pathingTask, (const char*) "DjikstraTask", STACK_BYTES(4096), 0, 3, 0);
-    xTaskCreate(lineFollowerTask, (const char*) "LineFollowerTask", STACK_BYTES(2048), 0, 0, 0);
-    xTaskCreate(updateTask, (const char*) "updateTask", STACK_BYTES(1024), 0, 0, 0);
+    xTaskCreate(wirelessTask, (const char*) "WirelessTask", STACK_BYTES(2048), 0, PRIORITY_HIGH, 0);
+    xTaskCreate(StateMachine, (const char*) "SMTask", STACK_BYTES(2048), 0, PRIORITY_MEDIUM, 0);
+    xTaskCreate(pathingTask, (const char*) "DjikstraTask", STACK_BYTES(4096), 0, PRIORITY_CRITICAL, 0);
+    xTaskCreate(lineFollowerTask, (const char*) "LineFollowerTask", STACK_BYTES(2048), 0, PRIORITY_LOW, 0);
+//    xTaskCreate(updateTask, (const char*) "updateTask", STACK_BYTES(1024), 0, 0, 0);//
     ////Pathing has been made a function instead. Phased out code remains as comments.
 
 

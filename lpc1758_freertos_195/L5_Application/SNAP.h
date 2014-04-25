@@ -13,8 +13,6 @@
 //#include "rtc.h"
 #include <stdint.h>
 #include "FreeRTOS.h"
-#include "queue.h"
-#include "semphr.h"
 #include "task.h"
 #include "singleton_template.hpp"  // Singleton Template
 

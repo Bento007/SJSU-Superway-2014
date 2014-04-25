@@ -208,7 +208,7 @@ void makeGraph(struct dijkstra* graph)
             // graph, i, j, weight, ticks, type, source, destination, station, merge, fork, right
             setEdge(graph, 10, 7, 3, 10, fork, 5, 2, false, false, true, true);
 
-            // M3 TO M1
+            // M3 to M1
             setEdge(graph, 9, 3, 5, 10, merge, 3, 1, false, true, false, false);
 
 

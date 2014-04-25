@@ -13,17 +13,19 @@ emergency = 9  #// an emergency has occured
 def getTimeRPC():
     xtime = time.localtime(time.time())
     rpc(remoteAddr,'getTime', xtime[0],xtime[1],xtime[2],xtime[3],xtime[4],xtime[5],xtime[6],xtime[7])
-    str = "getTime:" + remoteNode.name
-    print str #TODO: log this
+    str0 = "getTime:" + remoteNode.name
+    print str0 #TODO: log this
 def registerRPC(location):
     rpc(remoteAddr,'setActive')
-    str = "Registered: " + remoteNode.name +" @Location:" + str(location)
+    str0 = "Registered: " + remoteNode.name +" @Location:" + str(location)
+    str1 = str(location)
+    str2 = str0 + str1
     print str #TODO: log this
 
 def podStatus(time,status,location,speed,ticks, destination):
     #print remoteNode.getFormattedNetAddr()
     #remoteNode.getFormattedNetworkId()
-    str = remoteNode.name + "="
+    str0 = remoteNode.name + "="
     str1 ="Time:", time,"Status:",status,"Location:", location,"Speed:", speed,"Ticks:", ticks,"Destination:", destination
     if destination == 0 & status == ready:#TODO when is destination zero other than startup
         #TODO: find a new destination for the pod
@@ -32,7 +34,7 @@ def podStatus(time,status,location,speed,ticks, destination):
         rpc(remoteAddr,'setRoute',pickup, dropoff)
     
     #logData(
-    print str,str1 #TODO: log this
+    print str0,str1 #TODO: log this
     
 def setRoute():
     pass

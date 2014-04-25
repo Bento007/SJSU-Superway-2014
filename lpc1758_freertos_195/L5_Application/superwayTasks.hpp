@@ -25,13 +25,16 @@
 #include "shared_queues.hpp"
 #include "lineFollower.hpp"
 
-#define QDelay 100
-#define debug false
+#define Q_DELAY 100
+#define SEM_DELAY 5000
+
 /**********************************
  * Task Priorities
  * --- State Machine:   Low
  * --- Pathing:         Medium
  * --- Wireless:        High
+ * --- updateTask:      High
+ * --- lineFollowerTask: ???
  ***********************************/
 
 
@@ -58,24 +61,42 @@ void lineFollowerTask(void *p)
  * Can send data to state machine
  * -through WirelesstoSM queue.
  *********************************/
+void updateTaskTest(void *p)
+{
+    // Initialized variables
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = 500;
+
+    xLastWakeTime = xTaskGetTickCount();
+    while(1)
+    {
+        xSemaphoreGive(ticks_sem);
+#if DEBUG
+        puts("Give ticks_sem");
+#endif
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
 void updateTask(void *p)
 {
     // Initialized variables
     SNAP& wireless = SNAP::getInstance();
-//    TickType_t xLastWakeTime;
-//    const TickType_t xFrequency = 500;
-//
-//    xLastWakeTime = xTaskGetTickCount();
+
+    //Task for testing tick updates
+    xTaskCreate(updateTaskTest, (const char*) "updateTaskTest", STACK_BYTES(1024), 0, 1, 0);
+
 
     while(1)
     {
-        if(xSemaphoreTake(ticks_sem,5000))
+        if(xSemaphoreTake(ticks_sem,SEM_DELAY))
             wireless.send_Update();
-
-//        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-//        printf("update: %i\n",wireless.getLastUpdateTime());
+#if DEBUG
+        printf("update: %i\n",wireless.getLastUpdateTime());
+#endif
     }
 }
+
 /**********************************
  * Wireless Task
  * -------------
@@ -86,19 +107,30 @@ void updateTask(void *p)
  *********************************/
  void wirelessTask(void *p)
  {
-//     puts("Initializing WT");
+#if DEBUG
+     puts("Initializing WT");
+#endif
      SNAP& wireless = SNAP::getInstance();
      wireless.init();
+
+     //Wireless dependent tasks
+     xTaskCreate(updateTask, (const char*) "updateTask", STACK_BYTES(1024), 0, 1, 0);
+
 //     podStatus pod;
      uint32_t temp1,temp2;
+
      while(1)
      {
-         if(debug) puts("While loop of WT");
+#if DEBUG
+         puts("While loop of WT");
+#endif
          temp1 = 0;
          temp2 = 0;
          if(!wireless.RXempty())
          {
-             if(debug) puts("Inside if");
+#if DEBUG
+             puts("Inside if");
+#endif
              switch(wireless.get_nextCMD())
              {
                  vTaskDelay(100);
@@ -122,31 +154,39 @@ void updateTask(void *p)
                      //TODO: add shared queue to send to pathing
                      break;
                  case 'D'://give pathingTask new destination//TODO: check for valid destination inputs
+#if DEBUG
                      puts("Case D");
+#endif
                      //TODO: add shared queue to send to pathing
                      if(wireless.get_newDest(&temp1))
                      {
 //                       Send new destination value to the State Machine
-                         if(debug){
+#if DEBUG
                              puts("Got Value!");
                              printf("%i\n", temp1);
-                         }
+#endif
                          xQueueSend(newDestinationQ, &temp1, 100);
                      }
 //                     else
 //                         puts("Failed to get_newDest");
                      break;
                  default://send to SNAP invalid CMD
-//                     puts("inside switch");
+#if DEBUG
+                     puts("inside switch");
+#endif
                      break;
 
              }
          }
 
-         if(debug) puts("before if");
+#if DEBUG
+         puts("before if");
+#endif
      if(!wireless.recentlyUpdated(50))//update SNAP at least every 50ms
          wireless.send_Update();
-//     puts("After switch");
+#if DEBUG
+     puts("After switch");
+#endif
      //     if(xQueueReceive(SMtoWireless, &pod, 100));
      //     Info was requested by a SNAP so send: the pod's speed, location, and name.
      //     from inside podStatus "pod" struct. This is retrieved from State machine task.
@@ -204,7 +244,7 @@ void StateMachine(void *p){
     int array[11], receive;
     path_t travelPath;
 //    int start, end;
-
+    int dest;
 
     /*
      * Variables the SNAP devices is tracking
@@ -245,7 +285,10 @@ void StateMachine(void *p){
                  * else
                  *  next = error
                  */
-                if(debug)   puts("Startup State");
+#if DEBUG
+            puts("Startup State");
+#endif
+                dest = 0;
 //                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
                 //Send/Receive from SNAP a comm check
@@ -257,7 +300,10 @@ void StateMachine(void *p){
 
             case ready: LD.setNumber(2);
                 next = ready; //default until directions received.
-                if(debug)   puts("In Ready state");
+#if DEBUG
+                puts("In Ready state");
+#endif
+
 //                printf("\nSource: ");             //for debugging
 //                scanf("%i", &start);              //for debugging
 //                printf("\nEnd: ");                //for debugging
@@ -266,10 +312,27 @@ void StateMachine(void *p){
 //                travelPath.destination = end;     //for debugging
 //                travelPath.source = 1;            //for debugging
 //                travelPath.destination = 8;       //for debugging
+                if(manualCmd){
+
+                    while(dest == 0){
+
+                        if(SW.getSwitch(1)){
+                            dest = 8;
+                        }
+
+                        else if(SW.getSwitch(2))
+                            dest = 5;
+                    }
+                    xQueueSend(newDestinationQ, &dest, 10);
+                    dest =0;
+                }
 
             if(xQueueReceive(newDestinationQ, &travelPath.destination, 10))
                 {
-                    if(debug)   puts("Destination received");
+#if DEBUG
+                puts("Destination received");
+                printf("Destination: %i\n", travelPath.destination);
+#endif
                     xQueueSend(SMtoPath, &travelPath, 1);
 
                     //Retrieve the list of directions to be sent to the line follower
@@ -280,22 +343,29 @@ void StateMachine(void *p){
 
                         do{
                             array[i] = receive;
-                            if(debug)   printf("received: %i\n", receive);
+#if DEBUG
+                            printf("received: %i\n", receive);
+#endif
                             i++;
                         }while(xQueueReceive(pathToSM, &receive, 10));
 
-                        if(debug)   puts("Sending to LF");
-
+#if DEBUG
+                        puts("Sending to LF");
+#endif
                         for(int k=0; k<i; k++)
                         {
-                            if(debug)   printf("Sending %i\n", array[k]);
+#if DEBUG
+                            printf("Sending %i\n", array[k]);
+#endif
                             xQueueSend(directionQ, &array[k], 0);  //send instructions to line follower.
                         }
 
                         travelPath.source = travelPath.destination;
                         //At this point, directions are received.
                         //TODO: Send directions to line follower task
-                        if(debug)   puts("Going to roam");
+#if DEBUG
+                        puts("Going to roam");
+#endif
                         next = roam;
 //                        delay_ms(100);
                     }
@@ -317,11 +387,14 @@ void StateMachine(void *p){
                 if(xQueueReceive(lineFollowertoSM, &receive, 2000))
                 {
 //                    delay_ms(100);
-                    if(debug)   puts("Going to ready state");
+#if DEBUG
+                    puts("Going to ready state");
+#endif
                     next = pickup;
                 }
-//                puts("roaming");
-
+#if DEBUG
+                puts("roaming");
+#endif
                 //busy bit unset, means available.
                 //if NO directions
                 //--run around for fun
@@ -423,19 +496,25 @@ void pathingTask(void *p)
        bool done = false;
        bool start = true;
        if(xQueueReceive(SMtoPath, &initPath, 100)){
+#if DEBUG
+           printf("Entered Pathing, value: %i %i", initPath.source, initPath.destination);
+#endif
            dijkstra *mainGraph = new dijkstra;
            makeGraph(mainGraph);
            dijkstraFunc(mainGraph, initPath.source);
 
            int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
-//            printf("Got the array!\n");
+#if DEBUG
+           printf("Got the array!\n");
+#endif
            int i=0;
 
         while(!done)
         {
             send = directions[i];
+#if DEBUG
             printf("Printing before SM: %i\n", send);
-
+#endif
             if(!start && send == 0){
                 xQueueSend(pathToSM, &send,0);
                 done = true;
@@ -446,7 +525,9 @@ void pathingTask(void *p)
             start = false;
             i++;
         }
-           printf("\n\n");
+#if DEBUG
+        printf("\n\n");
+#endif
        }
    }
 }
