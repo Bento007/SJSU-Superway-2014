@@ -26,7 +26,7 @@ void turnRight();
 void loop();
 void station();
 void straight();
-void RCmode(int &tickgiven);
+void RCmode();
 void SWmode();
 void setLeftMotor(bool set);
 void setRightMotor(bool set);
@@ -85,14 +85,14 @@ void loop() {    // all sensors are active low
 //  int goright=2;
 //  int gostraight=1;
 //  int gostation=0;
-  int tickgiven = 10;
+//  int tickgiven = 10;
   int pop;
   int skip =0;
 
 
   while(1){
 
-	  RCmode(tickgiven);
+	  RCmode();
 
 	  if(!xQueueReceive(directionQ, &pop, 500)){
 
@@ -160,7 +160,7 @@ void station(){
 //	delay_ms(5000);	// debugging
 }
 
-void RCmode(int &tickgiven){
+void RCmode(){
 	bool exit=true;
 	while(exit){
 		LD.setRightDigit('G');
