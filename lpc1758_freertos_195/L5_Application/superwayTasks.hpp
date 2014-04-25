@@ -201,7 +201,7 @@ void StateMachine(void *p){
 //    podStatus pod;                          //Is this needed???
     int array[11], receive;
     path_t travelPath;
-    int start, end;
+//    int start, end;
 
 
     /*
@@ -243,8 +243,7 @@ void StateMachine(void *p){
                  * else
                  *  next = error
                  */
-                puts("Startup State");
-                if(debug)   printf("Startup state");
+                if(debug)   puts("Startup State");
 //                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
                 //Send/Receive from SNAP a comm check

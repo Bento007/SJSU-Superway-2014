@@ -1,26 +1,5 @@
-/*
- * lineFollower.hpp
- *
- *  Created on: Mar 21, 2014
- *      Author: Eriberto
- *
- *      EDIT: Mar 25, 2014
- *      Author:Trent S.
- *      -#defined constants
- *      -Removed globals
- *      -Fix leftMotor & rightMotor in constructor
- *      -added private members int leftSpeed and rightSpeed
- *      -Replaced  delay_ms(1000) with  vTaskDelay(1000)
- *      -Changed bool run(void*p) return value to true
- *      -Added timers
- */
 
 
-#ifndef LINEFOLLOWER_HPP_
-#define LINEFOLLOWER_HPP_
-
-//#include "tasks.hpp"
-//#include "examples/examples.hpp"
 #include "utilities.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -28,187 +7,209 @@
 #include "lpc_sys.h"
 #include "io.hpp"
 #include "queue.h"
+#include <printf_lib.h>
+#include <semphr.h>
+#include "eint.h"
 
 // PIN MAP //
-#define leftmotor 0         // PORT 2
-#define rightmotor 1
-#define aMUX 29             // PORT 0
-#define bMUX 30
-#define lleftsensor 29      // PORT 1
-#define leftsensor 28
-#define middlesensor 23
-#define rightsensor 22
-#define rrightsensor 20
+#define LEFTMOTOR 0			// PORT 2
+#define RIGHTMOTOR 1
+#define AMUX 29				// PORT 0
+#define BMUX 30
+#define LLEFTSENSOR 3      // PORT 2
+#define LEFTSENSOR 4
+#define MIDDLESENSOR 5
+#define RIGHTSENSOR 6
+#define RRIGHTSENSOR 7
 
 void turnRight();
 void loop();
 void station();
 void straight();
-void RCmode();
+void RCmode(int &tickgiven);
 void SWmode();
 void setLeftMotor(bool set);
 void setRightMotor(bool set);
+void tickFunction();
 
 bool getRRight(void)
 {
-    return !!(LPC_GPIO1->FIOPIN & (1 << rrightsensor));
+	return !!(LPC_GPIO2->FIOPIN & (1 << RRIGHTSENSOR));
 }
 bool getRight(void)
 {
-    return !!(LPC_GPIO1->FIOPIN & (1 << rightsensor));
+	return !!(LPC_GPIO2->FIOPIN & (1 << RIGHTSENSOR));
 }
 bool getMiddle(void)
 {
-    return !!(LPC_GPIO1->FIOPIN & (1 << middlesensor));
+	return !!(LPC_GPIO2->FIOPIN & (1 << MIDDLESENSOR));
 }
 bool getLeft(void)
 {
-    return !!(LPC_GPIO1->FIOPIN & (1 << leftsensor));
+	return !!(LPC_GPIO2->FIOPIN & (1 << LEFTSENSOR));
 }
 bool getLLeft(void)
 {
-    return !!(LPC_GPIO1->FIOPIN & (1 << lleftsensor));
+	return !!(LPC_GPIO2->FIOPIN & (1 << LLEFTSENSOR));
 }
 
-QueueHandle_t instructions;
+
+SemaphoreHandle_t ticks_sem;
 
 void setup() {
 
-    LPC_SC->PCLKSEL0 &= ~(3<<12);
-    LPC_SC->PCLKSEL0 |= (1<<13);                    // set CLK/1
+	LPC_SC->PCLKSEL0 &= ~(3<<12);
+	LPC_SC->PCLKSEL0 |= (1<<13);					// set CLK/1
 
-    // INPUTS //
-    LPC_GPIO1->FIODIR &= ~(1 << lleftsensor);
-    LPC_GPIO1->FIODIR &= ~(1 << leftsensor);
-    LPC_GPIO1->FIODIR &= ~(1 << middlesensor);
-    LPC_GPIO1->FIODIR &= ~(1 << rightsensor);
-    LPC_GPIO1->FIODIR &= ~(1 << rrightsensor);
+	// INPUTS //
+	LPC_GPIO2->FIODIR &= ~(1 << LLEFTSENSOR);
+	LPC_GPIO2->FIODIR &= ~(1 << LEFTSENSOR);
+	LPC_GPIO2->FIODIR &= ~(1 << MIDDLESENSOR);
+	LPC_GPIO2->FIODIR &= ~(1 << RIGHTSENSOR);
+	LPC_GPIO2->FIODIR &= ~(1 << RRIGHTSENSOR);
 
-    // OUTPUTS //
-    LPC_GPIO2->FIODIR |= (1 << leftmotor);
-    LPC_GPIO2->FIODIR |= (1 << rightmotor);
-    LPC_GPIO0->FIODIR |= (1 << aMUX);
-    LPC_GPIO0->FIODIR |= (1 << bMUX);
+	// OUTPUTS //
+	LPC_GPIO2->FIODIR |= (1 << LEFTMOTOR);
+	LPC_GPIO2->FIODIR |= (1 << RIGHTMOTOR);
+	LPC_GPIO0->FIODIR |= (1 << AMUX);
+	LPC_GPIO0->FIODIR |= (1 << BMUX);
 
+	eint3_enable_port2(LLEFTSENSOR, eint_rising_edge, tickFunction);
   // 2 = turn right
   // 1 = straight
   // 0 = station
 }
 
-void debuggerFunc(void)
-{
-    delay_ms(500);
-}
-
 void loop() {    // all sensors are active low
   // LOW = white    HIGH = black
-  int goright=2;
-  int gostraight=1;
-  int gostation=0;
+//  int goright=2;
+//  int gostraight=1;
+//  int gostation=0;
+  int tickgiven = 10;
   int pop;
-  int skip=0;
+  int skip =0;
+
 
   while(1){
 
-      RCmode(); //stays here until need to change.
+	  RCmode(tickgiven);
 
-      if(xQueueReceive(directionQ, &pop, 500)){
-//      printf("LF %i", pop);
-//      if(pop == 0){
-//          puts("\n");
-//          xQueueSend(lineFollowertoSM, &pop, 10);
-//      }
-//      debuggerFunc();
-//      }
+	  if(!xQueueReceive(directionQ, &pop, 500)){
 
-      if(pop==2){
-        turnRight();
-      }
-      if(pop==1){
+	  if(pop==2){
+		turnRight();
+	  }
 
-          if(skip==1)
-          {
-              turnRight();
-          }
-          else
-          {
-              straight();
-              skip++;
-          }
+	  if(pop==1){
+        if(skip==1)
+        {
+            turnRight();
+        }
+        else
+        {
+            straight();
+            skip++;
+        }
+	  }
 
-      }
-      if(pop==0){
-        station();
-        skip =0;
+	  if(pop==0){
+		station();
+		skip =0;
         xQueueSend(lineFollowertoSM, &pop, 10);
-      }
-  }//end if queue
-  }
-}
+	  }
+
+	  }//end xQueueReceive if
+  }//End while
+}//end function loop
 
 void turnRight(){
-    bool exit=true;
-    LD.setNumber(2);
-    while(exit){
-        LPC_GPIO0->FIOSET = (1 << aMUX);    // 0b11 = go straight
-        LPC_GPIO0->FIOSET = (1 << bMUX);
-        if((!getLLeft()&&!getLeft())||(!getLLeft()&&!getRight())){
-            exit=false;
-        }
-    }
+	bool exit=true;
+	LD.setRightDigit('R');
+//	printf("right\n");
+	while(exit){
+		LPC_GPIO0->FIOSET = (1 << AMUX);	// 0b11 = go straight
+		LPC_GPIO0->FIOSET = (1 << BMUX);
+		if( (!getLLeft() && !getLeft()) || (!getLLeft() && !getRight()) ){
+			exit=false;
+		}
+	}
 }
 
-void straight(){                // not 100% sure this is correct
-    LD.setNumber(1);
-    LPC_GPIO0->FIOCLR = (1 << aMUX);        // 0b10 = turn right
-    LPC_GPIO0->FIOSET = (1 << bMUX);
-    bool exit=true;
-    while(exit)
-    {
-//        printf("lleft=%i  left=%i  middle=%i  right=%i  rright=%i\n",!getLLeft(),!getLeft(),!getMiddle(),!getRight(),!getRRight());
-        if((!getLeft()&&!getRight())||(!getLLeft()&&!getLeft()&&!getRRight())||(!getLLeft()&&!getRight()&&!getRRight()))
-        {
-            exit=false;
-        }
-    }
+void straight(){
+	LD.setRightDigit('S');
+	//printf("straight\n");
+	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b10 = turn right
+	LPC_GPIO0->FIOSET = (1 << BMUX);
+	bool exit=true;
+	while(exit)
+	{
+		if( (!getLeft()&&!getRight())
+			|| (!getLLeft() && !getLeft()  && !getRRight())
+			|| (!getLLeft() && !getRight() && !getRRight()) )
+		{
+			exit=false;
+		}
+	}
 }
 
 void station(){
-    LD.setNumber(0);
-    LPC_GPIO0->FIOCLR = (1 << aMUX);        // 0b00 = RC mode
-    LPC_GPIO0->FIOCLR = (1 << bMUX);
-//    delay_ms(5000);
-//    straight();
+	LD.setRightDigit('0');
+//	printf("station\n");
+	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b00 = RC mode
+	LPC_GPIO0->FIOCLR = (1 << BMUX);
+//	delay_ms(5000);	// debugging
 }
 
-void RCmode(){
-    bool exit=true;
-    while(exit){
-        LD.setNumber(3);
-        LPC_GPIO0->FIOCLR = (1 << aMUX);            // 0b00 = RC mode
-        LPC_GPIO0->FIOCLR = (1 << bMUX);
-        if(getLLeft()&&getRRight()){
-            exit=false;
-        }
-        if(!getLLeft()&&getLeft()&&!getMiddle()&&getRight()&&!getRRight()){
-            SWmode();
-        }
-    }
+void RCmode(int &tickgiven){
+	bool exit=true;
+	while(exit){
+		LD.setRightDigit('G');
+	//	printf("RCmode\n");
+		LPC_GPIO0->FIOCLR = (1 << AMUX);			// 0b00 = RC mode
+		LPC_GPIO0->FIOCLR = (1 << BMUX);
+		if(getLLeft()&&getRRight()) {
+			exit=false;
+		}
+		if( !getLLeft() && getLeft() && !getMiddle() && getRight() && !getRRight() ) {
+			SWmode();
+		}
+	}
 }
 
 void SWmode(){
-//  setLeftMotor(false);
-//  setRightMotor(true);
-    LD.setNumber(4);
-    LPC_GPIO2->FIOCLR = (1 << leftmotor);
-    LPC_GPIO2->FIOSET = (1 << rightmotor);
+//	setLeftMotor(false);
+//	setRightMotor(true);
+	LD.setRightDigit('P');
+	LPC_GPIO2->FIOCLR = (1 << LEFTMOTOR);
+	LPC_GPIO2->FIOSET = (1 << RIGHTMOTOR);
 
-    // choose 0b01 = software mode
-    LPC_GPIO0->FIOSET = (1 << aMUX);
-    LPC_GPIO0->FIOCLR = (1 << bMUX);
-    delay_ms(100);
-
+	// choose 0b01 = software mode
+	LPC_GPIO0->FIOSET = (1 << AMUX);
+	LPC_GPIO0->FIOCLR = (1 << BMUX);
+	delay_ms(100);		// giving time for pod to get out of stop error
 }
 
+void tickFunction(){
+	xSemaphoreGive(ticks_sem);
+}
 
-#endif /* LINEFOLLOWER_HPP_ */
+//void setLeftMotor(bool set)
+//{
+//	if(set==false){
+//		LPC_GPIO2->FIOCLR = (1 << leftmotor);
+//	}
+//	if(set==true){
+//		LPC_GPIO2->FIOSET = (1 << leftmotor);
+//	}
+//}
+//
+//void setRightMotor(bool set)
+//{
+//	if(set==false){
+//		LPC_GPIO2->FIOCLR = (1 << rightmotor);
+//	}
+//	if(set==true){
+//		LPC_GPIO2->FIOSET = (1 << rightmotor);
+//	}
+//}
+
