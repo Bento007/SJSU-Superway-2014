@@ -352,6 +352,7 @@ void StateMachine(void *p){
 #if DEBUG
                         puts("Sending to LF");
 #endif
+                        LE.off(1);
                         for(int k=0; k<i; k++)
                         {
 #if DEBUG

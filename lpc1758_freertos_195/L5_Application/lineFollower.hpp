@@ -138,7 +138,7 @@ void loop() {    // all sensors are active low
 
 void turnRight(){
 	bool exit=true;
-	LD.setRightDigit('R');
+	LD.setLeftDigit('R');
 #if DEBUG	
 	printf("right\n");
 #endif
