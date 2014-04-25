@@ -41,7 +41,8 @@
 int main(void)
 {
 	instructions = xQueueCreate(10, sizeof(int));
-	tickqueue = xQueueCreate(10, sizeof(int));
+	vSemaphoreCreateBinary( ticks_sem )
+
 	setup();
 	loop();
     return -1;

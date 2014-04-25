@@ -17,6 +17,8 @@
 #include "lpc_sys.h"
 #include "io.hpp"
 #include "queue.h"
+#include <printf_lib.h>
+#include <semphr.h>
 
 // PIN MAP //
 #define LEFTMOTOR 0			// PORT 2
@@ -38,7 +40,6 @@ void SWmode();
 void setLeftMotor(bool set);
 void setRightMotor(bool set);
 void tickFunction();
-int deleteme=7;
 
 bool getRRight(void)
 {
@@ -62,7 +63,7 @@ bool getLLeft(void)
 }
 
 xQueueHandle instructions;
-xQueueHandle tickqueue;
+xSemaphoreHandle ticks_sem;
 
 void setup() {
 
@@ -97,7 +98,6 @@ void loop() {    // all sensors are active low
   int pop;
   bool rightTurn=false;
 
-  xQueueSend(tickqueue, &tickgiven, portMAX_DELAY);
 
   while(1){
 	  xQueueSend(instructions, &gostraight, portMAX_DELAY);
@@ -126,7 +126,7 @@ void loop() {    // all sensors are active low
 void turnRight(){
 	bool exit=true;
 	LD.setRightDigit('R');
-	printf("right\n");
+//	printf("right\n");
 	while(exit){
 		LPC_GPIO0->FIOSET = (1 << AMUX);	// 0b11 = go straight
 		LPC_GPIO0->FIOSET = (1 << BMUX);
@@ -138,7 +138,7 @@ void turnRight(){
 
 void straight(){
 	LD.setRightDigit('S');
-	printf("straight\n");
+	//printf("straight\n");
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b10 = turn right
 	LPC_GPIO0->FIOSET = (1 << BMUX);
 	bool exit=true;
@@ -155,7 +155,7 @@ void straight(){
 
 void station(){
 	LD.setRightDigit('0');
-	printf("station\n");
+//	printf("station\n");
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b00 = RC mode
 	LPC_GPIO0->FIOCLR = (1 << BMUX);
 	delay_ms(5000);	// debugging
@@ -165,7 +165,7 @@ void RCmode(int &tickgiven){
 	bool exit=true;
 	while(exit){
 		LD.setRightDigit('G');
-		printf("RCmode\n");
+	//	printf("RCmode\n");
 		LPC_GPIO0->FIOCLR = (1 << AMUX);			// 0b00 = RC mode
 		LPC_GPIO0->FIOCLR = (1 << BMUX);
 		if(getLLeft()&&getRRight()) {
@@ -191,10 +191,7 @@ void SWmode(){
 }
 
 void tickFunction(){
-	/// working progress: fix this!!!!
-	LD.setRightDigit(deleteme+48);
-	printf(" TICK!! { %c } ", deleteme+48);
-	deleteme--;
+	xSemaphoreGive(ticks_sem);
 }
 
 //void setLeftMotor(bool set)
