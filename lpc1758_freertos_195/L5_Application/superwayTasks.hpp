@@ -255,8 +255,7 @@ void StateMachine(void *p){
                 next = ready;
                 break;  //end startup-state
 
-            case ready:
-                LD.setNumber(2);
+            case ready: LD.setNumber(2);
                 next = ready; //default until directions received.
                 if(debug)   puts("In Ready state");
 //                printf("\nSource: ");             //for debugging
