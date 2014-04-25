@@ -19,43 +19,10 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
                 lineFollowertoSM,   //Line follower -> State Machine
                 SMtoPath,           //State machine -> Pathing (djikstra)
                 pathToSM,           //Pathing (djikstra) -> State machine
-                directionQ;         //State Machine to Line Follower (directions)
+                directionQ,         //State Machine to Line Follower (directions)
+                tickEventQ;         //Wakes the updateTask when a Tick has been reached.
 //TODO: check if more queues are needed
 
-/* ====================================
- * Shared Struct and Types
- * ===================================
- */
-//struct S{   //station
-//        int bays;   // number of bays pods can load/load at.
-//        int weight; // describes the time and distance it will take to travel.
-//};
-//
-//struct F{   //fork
-//        int weight; // describes the time and distance it will take to travel.
-//};
-//
-//struct M{   //merge
-//        /* Every length of track feeding into the merge point needs a weight
-//         * and the name number of ticks till merge.
-//         */
-//        int weight1, // describes the time and distance it will take to travel.
-//        int ticks;  // number of ticks till merge.
-//};
-//
-//union nodeInfo{
-//        struct M *merge;
-//        struct F *fork;
-//        struct S *station;
-//};
-//
-//
-///*node structs describes the different sections of the track*/
-//typedef struct node{
-//        char type;                  // S=station, M = merge, F = fork, D= depot.
-//        char name[4];               // identifies the nodes specific name.
-//        union nodeInfo info ;       //points to the info about the node
-//}trackSection;
 typedef struct path_t{
         uint32_t source;
         uint32_t destination;
