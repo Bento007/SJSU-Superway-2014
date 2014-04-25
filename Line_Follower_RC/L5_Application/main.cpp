@@ -41,7 +41,7 @@
 int main(void)
 {
 	instructions = xQueueCreate(10, sizeof(int));
-
+	tickqueue = xQueueCreate(10, sizeof(int));
 	setup();
 	loop();
     return -1;
