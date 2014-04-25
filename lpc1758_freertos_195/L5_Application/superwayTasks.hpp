@@ -26,7 +26,7 @@
 #include "lineFollower.hpp"
 
 #define QDelay 100
-#define debug false
+
 /**********************************
  * Task Priorities
  * --- State Machine:   Low
@@ -123,6 +123,7 @@ void updateTask(void *p)
                      break;
                  case 'D'://give pathingTask new destination//TODO: check for valid destination inputs
                      puts("Case D");
+
                      //TODO: add shared queue to send to pathing
                      if(wireless.get_newDest(&temp1))
                      {
@@ -131,6 +132,7 @@ void updateTask(void *p)
                              puts("Got Value!");
                              printf("%i\n", temp1);
                          }
+                         LE.on(1);
                          xQueueSend(newDestinationQ, &temp1, 100);
                      }
 //                     else
@@ -204,7 +206,7 @@ void StateMachine(void *p){
     int array[11], receive;
     path_t travelPath;
 //    int start, end;
-
+    int dest;
 
     /*
      * Variables the SNAP devices is tracking
@@ -246,6 +248,7 @@ void StateMachine(void *p){
                  *  next = error
                  */
                 if(debug)   puts("Startup State");
+                dest = 0;
 //                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
                 //Send/Receive from SNAP a comm check
@@ -258,7 +261,7 @@ void StateMachine(void *p){
             case ready:
                 LD.setNumber(2);
                 next = ready; //default until directions received.
-                if(debug)   puts("In Ready state");
+//                if(debug)   puts("In Ready state");
 //                printf("\nSource: ");             //for debugging
 //                scanf("%i", &start);              //for debugging
 //                printf("\nEnd: ");                //for debugging
@@ -267,10 +270,25 @@ void StateMachine(void *p){
 //                travelPath.destination = end;     //for debugging
 //                travelPath.source = 1;            //for debugging
 //                travelPath.destination = 8;       //for debugging
+                if(manualCmd){
+
+                    while(dest == 0){
+
+                        if(SW.getSwitch(1)){
+                            dest = 8;
+                        }
+
+                        else if(SW.getSwitch(2))
+                            dest = 5;
+                    }
+                    xQueueSend(newDestinationQ, &dest, 10);
+                    dest =0;
+                }
 
             if(xQueueReceive(newDestinationQ, &travelPath.destination, 10))
                 {
                     if(debug)   puts("Destination received");
+                    if(debug)   printf("Destination: %i\n", travelPath.destination);
                     xQueueSend(SMtoPath, &travelPath, 1);
 
                     //Retrieve the list of directions to be sent to the line follower
@@ -286,7 +304,7 @@ void StateMachine(void *p){
                         }while(xQueueReceive(pathToSM, &receive, 10));
 
                         if(debug)   puts("Sending to LF");
-
+                        LE.off(1);
                         for(int k=0; k<i; k++)
                         {
                             if(debug)   printf("Sending %i\n", array[k]);
@@ -424,6 +442,7 @@ void pathingTask(void *p)
        bool done = false;
        bool start = true;
        if(xQueueReceive(SMtoPath, &initPath, 100)){
+           if(debug)    printf("Entered Pathing, value: %i %i", initPath.source, initPath.destination);
            dijkstra *mainGraph = new dijkstra;
            makeGraph(mainGraph);
            dijkstraFunc(mainGraph, initPath.source);

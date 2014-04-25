@@ -24,6 +24,13 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
                 tickEventQ;         //Wakes the updateTask when a Tick has been reached.
 //TODO: check if more queues are needed
 
+#define debug false     //Used to debug software. Will enable printf and puts commands.
+
+#define manualCmd true  //Used to debug without Wireless communications.
+                        //Uses onboard buttons to control destination of pod.
+
+
+
 /**********************************
  * Superway Shared Semaphores
  **********************************/

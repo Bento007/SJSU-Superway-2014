@@ -1,5 +1,3 @@
-
-
 #include "utilities.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -10,6 +8,9 @@
 #include <printf_lib.h>
 #include <semphr.h>
 #include "eint.h"
+#include "shared_queues.hpp"
+
+
 
 // PIN MAP //
 #define LEFTMOTOR 0			// PORT 2
@@ -94,9 +95,17 @@ void loop() {    // all sensors are active low
 
 	  RCmode();
 
-	  if(!xQueueReceive(directionQ, &pop, 500)){
+	  if(xQueueReceive(directionQ, &pop, 500)){
 
-	  if(pop==2){
+      if(debug) printf("LF %i", pop);
+
+//      if(pop == 0){
+//          puts("\n");
+//          xQueueSend(lineFollowertoSM, &pop, 10);
+//      }
+      if(debug) printf("Skip val: %i", skip);
+
+      if(pop==2){
 		turnRight();
 	  }
 
@@ -104,6 +113,7 @@ void loop() {    // all sensors are active low
         if(skip==1)
         {
             turnRight();
+            skip++;
         }
         else
         {
@@ -124,20 +134,20 @@ void loop() {    // all sensors are active low
 
 void turnRight(){
 	bool exit=true;
-	LD.setRightDigit('R');
-//	printf("right\n");
+	LD.setLeftDigit('R');
+	if(debug)   printf("right\n");
 	while(exit){
 		LPC_GPIO0->FIOSET = (1 << AMUX);	// 0b11 = go straight
 		LPC_GPIO0->FIOSET = (1 << BMUX);
-		if( (!getLLeft() && !getLeft()) || (!getLLeft() && !getRight()) ){
+		if( (!getLLeft() && !getLeft()) || (!getLLeft() && !getRight())){
 			exit=false;
 		}
 	}
 }
 
 void straight(){
-	LD.setRightDigit('S');
-	//printf("straight\n");
+	LD.setLeftDigit('S');
+	if(debug)   printf("straight\n");
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b10 = turn right
 	LPC_GPIO0->FIOSET = (1 << BMUX);
 	bool exit=true;
@@ -145,7 +155,7 @@ void straight(){
 	{
 		if( (!getLeft()&&!getRight())
 			|| (!getLLeft() && !getLeft()  && !getRRight())
-			|| (!getLLeft() && !getRight() && !getRRight()) )
+			|| (!getLLeft() && !getRight() && !getRRight()))
 		{
 			exit=false;
 		}
@@ -153,8 +163,8 @@ void straight(){
 }
 
 void station(){
-	LD.setRightDigit('0');
-//	printf("station\n");
+	LD.setLeftDigit('0');
+	if(debug) printf("station\n");
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b00 = RC mode
 	LPC_GPIO0->FIOCLR = (1 << BMUX);
 //	delay_ms(5000);	// debugging
@@ -163,8 +173,8 @@ void station(){
 void RCmode(){
 	bool exit=true;
 	while(exit){
-		LD.setRightDigit('G');
-	//	printf("RCmode\n");
+		LD.setLeftDigit('G');
+		if(debug)   printf("RCmode\n");
 		LPC_GPIO0->FIOCLR = (1 << AMUX);			// 0b00 = RC mode
 		LPC_GPIO0->FIOCLR = (1 << BMUX);
 		if(getLLeft()&&getRRight()) {
@@ -179,7 +189,7 @@ void RCmode(){
 void SWmode(){
 //	setLeftMotor(false);
 //	setRightMotor(true);
-	LD.setRightDigit('P');
+	LD.setLeftDigit('P');
 	LPC_GPIO2->FIOCLR = (1 << LEFTMOTOR);
 	LPC_GPIO2->FIOSET = (1 << RIGHTMOTOR);
 
