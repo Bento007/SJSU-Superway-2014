@@ -48,7 +48,7 @@ bool SNAP::send_Update()
     //add semaphore
     Uart3& wireless = Uart3::getInstance();
 //    if(wireless.printf("U%i:%i:%i,%i,%i,%i\n",time.hour, time.min, time.sec, location, status,speed))
-    if(wireless.printf("U%i,%i,%i,%i,%i,%i,%i\n",mLastActivityTime, location,destination, status,speed,ticks,ticks/speed))
+    if(wireless.printf("U%i,%i,%i,%i,\n",mLastActivityTime, location, status,ticks))
     {
         resetUpdateTime();
         return true;
@@ -107,7 +107,8 @@ bool  SNAP::get_newDest(uint32_t *dest)
 {
 //    puts("Inside get_newDest");
     Uart3& wireless = Uart3::getInstance();
-//    wireless.putline("D",200);
+//    wireless.putChar('D',200);
+//    wireless.putChar('\n',200);
     wireless.scanf("%*c%i",dest);
     if(destination == *dest )//TODO: check if a valid destination
     {
@@ -189,9 +190,14 @@ void SNAP::setup_Time()
     wireless.flush();
 }
 
-void SNAP::update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, int tic)
+void SNAP::update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, uint32_t tic)
 {   status = sta;  speed = spe;
-    ticks = tic;    location = loc;
+    if(location != loc)
+    {
+        ticks = tic;
+        location = loc;
+    }
+    ticks--;
 }
 
 void SNAP::send_Time()  //sends current RTC

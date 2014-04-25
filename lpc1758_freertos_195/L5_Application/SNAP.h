@@ -50,7 +50,7 @@ class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data i
 
 //        bool recentlyActive(uint32_t ms);
         bool RXempty(); //checks if rx is empty
-		void update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, int tic);
+		void update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, uint32_t tic);
 
 //        inline TickType_t getLastUpdateTime(void) const { return mLastActivityTime; }
 		inline TickType_t getLastUpdateTime(void) const
