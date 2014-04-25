@@ -45,6 +45,14 @@
  */
 int main(void)
 {
+	// LINEFOLLOWER INIT //
+	instructions = xQueueCreate(10, sizeof(int));
+	vSemaphoreCreateBinary( ticks_sem )
+
+	setup();
+	loop();
+	// END LINEFOLLOWER //
+
     /**
      * A few basic tasks for this bare-bone system :
      *      1.  Terminal task provides gateway to interact with the board through UART terminal.
