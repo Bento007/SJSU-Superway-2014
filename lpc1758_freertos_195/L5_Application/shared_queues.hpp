@@ -9,6 +9,7 @@
 #define SHARED_QUEUES_HPP_
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
 /**********************************
  * Superway Shared Queues
  **********************************/
@@ -22,6 +23,16 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
                 directionQ,         //State Machine to Line Follower (directions)
                 tickEventQ;         //Wakes the updateTask when a Tick has been reached.
 //TODO: check if more queues are needed
+
+/**********************************
+ * Superway Shared Semaphores
+ **********************************/
+
+SemaphoreHandle_t ticks_sem;    //used to signal updateTask to go.
+
+/**********************************
+ * Superway Strucutures
+ **********************************/
 
 typedef struct path_t{
         uint32_t source;

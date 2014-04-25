@@ -94,7 +94,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[1][2].right=false;
 
             // F4 to M2
-            setEdge(graph, 11, 2, 5,10,fork,4,2,false,false,true,false);
+            setEdge(graph, 11, 2, 3,10,fork,4,2,false,false,true,false);
 //            graph->edgeWeight[11][2].weight= 5;
 //            graph->edgeWeight[11][2].station= false;
 //            graph->edgeWeight[11][2].merge= false;
@@ -144,7 +144,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[8][9].right= false;
 
             // F2 to M3
-            setEdge(graph, 7, 9, 5,10,fork,2,3,false,false,true,false);
+            setEdge(graph, 7, 9, 3,10,fork,2,3,false,false,true,false);
 //            graph->edgeWeight[7][9].weight= 5;
 //            graph->edgeWeight[7][9].station= false;
 //            graph->edgeWeight[7][9].merge= false;

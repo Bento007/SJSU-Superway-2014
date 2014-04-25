@@ -62,16 +62,18 @@ void updateTask(void *p)
 {
     // Initialized variables
     SNAP& wireless = SNAP::getInstance();
-    TickType_t xLastWakeTime;
-    const TickType_t xFrequency = 500;
-
-    xLastWakeTime = xTaskGetTickCount();
+//    TickType_t xLastWakeTime;
+//    const TickType_t xFrequency = 500;
+//
+//    xLastWakeTime = xTaskGetTickCount();
 
     while(1)
     {
-        wireless.send_Update();
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        printf("update: %i\n",wireless.getLastUpdateTime());
+        if(xSemaphoreTake(ticks_sem,5000))
+            wireless.send_Update();
+
+//        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+//        printf("update: %i\n",wireless.getLastUpdateTime());
     }
 }
 /**********************************

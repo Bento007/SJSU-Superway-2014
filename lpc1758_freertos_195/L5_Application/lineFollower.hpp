@@ -54,7 +54,7 @@ bool getLLeft(void)
 }
 
 
-SemaphoreHandle_t ticks_sem;
+//SemaphoreHandle_t ticks_sem;
 
 void setup() {
 

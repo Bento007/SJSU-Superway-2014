@@ -16,6 +16,9 @@ int main()
     SMtoLineFollower = xQueueCreate(1, sizeof(int));
     tickEventQ = xQueueCreate(1, sizeof(int));  //experimental
 
+    //create the Semaphores in tasks...
+    ticks_sem = xSemaphoreCreateBinary();
+
     //TODO: create other queues, if used.
     if(debug)   puts("In main, initializing Wireless Task");
 
