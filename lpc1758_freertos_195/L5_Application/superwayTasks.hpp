@@ -25,6 +25,7 @@
 #include "shared_queues.hpp"
 #include "lineFollower.hpp"
 
+
 #define Q_DELAY 100
 #define SEM_DELAY 5000
 
@@ -165,10 +166,11 @@ void updateTask(void *p)
                              puts("Got Value!");
                              printf("%i\n", temp1);
 #endif
+
+                         LE.on(1);
                          xQueueSend(newDestinationQ, &temp1, 100);
                      }
-//                     else
-//                         puts("Failed to get_newDest");
+
                      break;
                  default://send to SNAP invalid CMD
 #if DEBUG
@@ -285,9 +287,11 @@ void StateMachine(void *p){
                  * else
                  *  next = error
                  */
+
 #if DEBUG
             puts("Startup State");
 #endif
+
                 dest = 0;
 //                setup();    //initialize the line follower
                 //Read from sensors, do quick check?
@@ -300,6 +304,7 @@ void StateMachine(void *p){
 
             case ready: LD.setNumber(2);
                 next = ready; //default until directions received.
+
 #if DEBUG
                 puts("In Ready state");
 #endif
@@ -333,6 +338,7 @@ void StateMachine(void *p){
                 puts("Destination received");
                 printf("Destination: %i\n", travelPath.destination);
 #endif
+
                     xQueueSend(SMtoPath, &travelPath, 1);
 
                     //Retrieve the list of directions to be sent to the line follower
@@ -500,6 +506,7 @@ void pathingTask(void *p)
 #if DEBUG
            printf("Entered Pathing, value: %i %i", initPath.source, initPath.destination);
 #endif
+
            dijkstra *mainGraph = new dijkstra;
            makeGraph(mainGraph);
            dijkstraFunc(mainGraph, initPath.source);

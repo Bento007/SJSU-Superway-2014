@@ -101,15 +101,11 @@ void loop() {    // all sensors are active low
       printf("LF %i", pop);
 #endif
 
-//      if(pop == 0){
-//          puts("\n");
-//          xQueueSend(lineFollowertoSM, &pop, 10);
-//      }
 #if DEBUG 
  		printf("Skip val: %i", skip);
 #endif
 
-	  if(pop==2){
+      if(pop==2){
 		turnRight();
 	  }
 
@@ -139,13 +135,15 @@ void loop() {    // all sensors are active low
 void turnRight(){
 	bool exit=true;
 	LD.setLeftDigit('R');
+
 #if DEBUG	
 	printf("right\n");
 #endif
+
 	while(exit){
 		LPC_GPIO0->FIOSET = (1 << AMUX);	// 0b11 = go straight
 		LPC_GPIO0->FIOSET = (1 << BMUX);
-		if( (!getLLeft() && !getLeft()) || (!getLLeft() && !getRight()) ){
+		if( (!getLLeft() && !getLeft()) || (!getLLeft() && !getRight())){
 			exit=false;
 		}
 	}
@@ -153,9 +151,11 @@ void turnRight(){
 
 void straight(){
 	LD.setLeftDigit('S');
+	
 #if DEBUG
 	printf("straight\n");
 #endif
+
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b10 = turn right
 	LPC_GPIO0->FIOSET = (1 << BMUX);
 	bool exit=true;
@@ -163,7 +163,7 @@ void straight(){
 	{
 		if( (!getLeft()&&!getRight())
 			|| (!getLLeft() && !getLeft()  && !getRRight())
-			|| (!getLLeft() && !getRight() && !getRRight()) )
+			|| (!getLLeft() && !getRight() && !getRRight()))
 		{
 			exit=false;
 		}
@@ -171,10 +171,12 @@ void straight(){
 }
 
 void station(){
-	LD.setRightDigit('0');
+
+	LD.setLeftDigit('0');
 #if DEBUG
 	printf("station\n");
 #endif
+
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b00 = RC mode
 	LPC_GPIO0->FIOCLR = (1 << BMUX);
 //	delay_ms(5000);	// debugging
@@ -184,9 +186,11 @@ void RCmode(){
 	bool exit=true;
 	while(exit){
 		LD.setLeftDigit('G');
+
 #if DEBUG
 		printf("RCmode\n");
 #endif
+
 		LPC_GPIO0->FIOCLR = (1 << AMUX);			// 0b00 = RC mode
 		LPC_GPIO0->FIOCLR = (1 << BMUX);
 		if(getLLeft()&&getRRight()) {
