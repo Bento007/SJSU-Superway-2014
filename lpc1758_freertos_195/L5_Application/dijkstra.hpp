@@ -10,7 +10,7 @@
 #include <queue>
 #include <stack>
 #include <iostream>
-#include "shared_queues.hpp"
+#include "shared_handles.h"
 
 using namespace std;
 
@@ -80,7 +80,7 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // F4 to S1
-            setEdge(graph, 11, 1, 2,2,fork,4,1,false,false,true,true);
+            setEdge(graph, 11, 1, 2,2,fork,11,1,false,false,true,true);
 //            graph->edgeWeight[11][1].weight= 2;
 //            graph->edgeWeight[11][1].station= false;
 //            graph->edgeWeight[11][1].merge= false;
@@ -96,7 +96,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[1][2].right=false;
 
             // F4 to M2
-            setEdge(graph, 11, 2, 3,3,fork,4,2,false,false,true,false);
+            setEdge(graph, 11, 2, 3,3,fork,11,2,false,false,true,false);
 //            graph->edgeWeight[11][2].weight= 3;
 //            graph->edgeWeight[11][2].station= false;
 //            graph->edgeWeight[11][2].merge= false;
@@ -108,7 +108,7 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // M2 to M1
-            setEdge(graph, 2, 3, 3,3,merge,2,1,false,true,false,false);
+            setEdge(graph, 2, 3, 3,3,merge,2,3,false,true,false,false);
 //            graph->edgeWeight[2][3].weight= 3;
 //            graph->edgeWeight[2][3].station= false;
 //            graph->edgeWeight[2][3].merge= true;
@@ -118,7 +118,7 @@ void makeGraph(struct dijkstra* graph)
 
             // S1 going to S3 via M1
             // M1 to F3
-            setEdge(graph, 3, 4, 6,6,merge,1,3,false,true,false,false);
+            setEdge(graph, 3, 4, 6,6,merge,3,4,false,true,false,false);
 //            graph->edgeWeight[3][4].weight= 6;
 //            graph->edgeWeight[3][4].station= false;
 //            graph->edgeWeight[3][4].merge= true;
@@ -130,7 +130,7 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // F2 to S2
-            setEdge(graph, 7, 8, 2,2,fork,2,2,false,false,true,true);
+            setEdge(graph, 7, 8, 2,2,fork,7,8,false,false,true,true);
 //            graph->edgeWeight[7][8].weight= 2;
 //            graph->edgeWeight[7][8].station= false;
 //            graph->edgeWeight[7][8].merge= false;
@@ -138,7 +138,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[7][8].right= true;
 
             // S2 to M3
-            setEdge(graph, 8, 9, 2,2,stations,2,3,true,false,false,false);
+            setEdge(graph, 8, 9, 2,2,stations,8,9,true,false,false,false);
 //            graph->edgeWeight[8][9].weight= 2;
 //            graph->edgeWeight[8][9].station= true;
 //            graph->edgeWeight[8][9].merge= false;
@@ -163,7 +163,7 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // F3 to S3
-            setEdge(graph, 4, 5, 2,2,fork,3,3,false,false,true,true);
+            setEdge(graph, 4, 5, 2,2,fork,4,5,false,false,true,true);
 //            graph->edgeWeight[4][5].weight= 2;
 //            graph->edgeWeight[4][5].station= false;
 //            graph->edgeWeight[4][5].merge= false;
@@ -171,7 +171,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[4][5].right= true;
 
             // S3 to M4
-            setEdge(graph, 5, 6, 2,2,stations,3,4,true,false,false,false);
+            setEdge(graph, 5, 6, 2,2,stations,5,6,true,false,false,false);
 //            graph->edgeWeight[5][6].weight= 2;
 //            graph->edgeWeight[5][6].station= true;
 //            graph->edgeWeight[5][6].merge= false;
@@ -179,7 +179,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[5][6].right= false;
 
             // F3 to M4
-            setEdge(graph, 4, 6, 3,3,fork,3,4,false,false,true,false);
+            setEdge(graph, 4, 6, 3,3,fork,3,3,false,false,true,false);
 //            graph->edgeWeight[4][6].weight= 3;
 //            graph->edgeWeight[4][6].station= false;
 //            graph->edgeWeight[4][6].merge= false;
@@ -191,7 +191,7 @@ void makeGraph(struct dijkstra* graph)
             /********************************/
 
             // M4 to F5
-            setEdge(graph, 6, 10, 8,8,merge,4,5,false,true,false,false);
+            setEdge(graph, 6, 10, 8,8,merge,6,10,false,true,false,false);
 //            graph->edgeWeight[6][10].weight= 8;
 //            graph->edgeWeight[6][10].station= false;
 //            graph->edgeWeight[6][10].merge= true;
@@ -199,7 +199,7 @@ void makeGraph(struct dijkstra* graph)
 //            graph->edgeWeight[6][10].right= false;
 
             // F5 to F4
-            setEdge(graph, 10, 11, 7,7,fork,5,4,false,false,true,false);
+            setEdge(graph, 10, 11, 7,7,fork,10,11,false,false,true,false);
 //            graph->edgeWeight[10][11].weight= 7;
 //            graph->edgeWeight[10][11].station= false;
 //            graph->edgeWeight[10][11].merge= false;
@@ -208,10 +208,10 @@ void makeGraph(struct dijkstra* graph)
 
             // F5 TO F2
             // graph, i, j, weight, ticks, type, source, destination, station, merge, fork, right
-            setEdge(graph, 10, 7, 3, 3, fork, 5, 2, false, false, true, true);
+            setEdge(graph, 10, 7, 3, 3, fork, 10, 7, false, false, true, true);
 
             // M3 TO M1
-            setEdge(graph, 9, 3, 5, 5, merge, 3, 1, false, true, false, false);
+            setEdge(graph, 9, 3, 5, 5, merge, 9, 3, false, true, false, false);
 
 
             /*Checking what node type is: Station, Merge, or Fork*/
@@ -304,112 +304,138 @@ void dijkstraFunc(struct dijkstra* graph, int src)
     and then prints from dest --> backwards --> src
 - I made a stack just because to make it easier to visualize which nodes are being visited
 */
-int* print(struct dijkstra* graph, int src, int dest, int *array, int size)
+int* print(struct dijkstra* graph, int src, int dest, int *directions_ary_ptr,gNode *nodes_ary_ptr, int size)
 {
     stack<int> mystack, pDir;
     stack<gNode> visitedNodes;
 
     int i, k, node1, node2;
+    i = dest;
+#if DEBUG
+    printf("\nDJ Instructions from source { %i } ", src);
+#endif
 
-    printf("\nInstructions from source { %i } ", src);
-    for (i = 0; i <= vertices; i++)
+    if (dest <= vertices)
     {
-        if (i == dest)
+#if DEBUG
+        printf("DJ to vertex { %i }", i);
+        printf(" is: \n");
+#endif
+        k = dest;
+        pDir.push(0);
+        mystack.push (k);
+        visitedNodes.push(graph->edgeWeight[dest][k]); // if destination reached, push src->dest node
+#if DEBUG
+        printf("DJ (Read from the bottom up) \n\n");
+#endif
+        while (graph->curPosition[k] != src)
         {
+            k = graph->curPosition[k];
 
-            printf("to vertex { %i }", i);
-
-            printf(" is: \n");
-            k = i;
-            pDir.push(0);
+            node2 = mystack.top();
+            /* Stores "Next" node (int) value so that I can access the node object! */
             mystack.push (k);
-            visitedNodes.push(graph->edgeWeight[src][k]); // if destination reached, push src->dest node
-            printf("(Read from the bottom up) \n\n");
+            node1 = mystack.top();
+            /* Stores "Current" node (int) value so that I can access the node object! */
+            visitedNodes.push(graph->edgeWeight[node1][node2]);
 
-            while (graph->curPosition[k] != src)
+            /*EDITING FOR FREE RTOS*/
+
+            if( graph->edgeWeight[node1][node2].right == true)
+            // graph->edgeWeight[node1][node2].right is my node object
             {
-                k = graph->curPosition[k];
-
-                node2 = mystack.top();
-                /* Stores "Next" node (int) value so that I can access the node object! */
-                mystack.push (k);
-                node1 = mystack.top();
-                /* Stores "Current" node (int) value so that I can access the node object! */
-                visitedNodes.push(graph->edgeWeight[node1][node2]);
-
-                /*EDITING FOR FREE RTOS*/
-
-                if( graph->edgeWeight[node1][node2].right == true)
-                // graph->edgeWeight[node1][node2].right is my node object
-                {
-                    printf("TURN RIGHT\n");
-                    pDir.push(2);
-                }
-                else
-                {
-                    printf("Move forward\n");
-                    pDir.push(1);
-                }
-            }//end while loop
-
-            /*
-            Pushing the src node outside of while loop because
-            src is not needed to find neighboring nodes
-            */
-            mystack.push(src);
-            visitedNodes.push(graph->edgeWeight[src][k]);
-            /*MODIFIED FOR FREERTOS; ORIGINAL IN COMMENTS*/
-            if( graph->edgeWeight[src][node1].right)
-            {
-                printf("***TURN RIGHT\n");
+#if DEBUG
+                printf("DJ TURN RIGHT\n");
+#endif
                 pDir.push(2);
             }
             else
             {
-                printf("Move forward\n");
+#if DEBUG
+                printf("DJ Move forward\n");
+#endif
                 pDir.push(1);
             }
+        }//end while loop
 
-            printf("\nTravel distance (total edge weight traveled) : %i", graph->nWeight[i]);
-            printf("\n\n");
+        /*
+        Pushing the src node outside of while loop because
+        src is not needed to find neighboring nodes
+        */
+        mystack.push(src);
+        visitedNodes.push(graph->edgeWeight[src][k]);
+        /*MODIFIED FOR FREERTOS; ORIGINAL IN COMMENTS*/
+        if( graph->edgeWeight[src][node1].right)
+        {
+#if DEBUG
+            printf("DJ ***TURN RIGHT\n");
+#endif
+            pDir.push(2);
+        }
+        else
+        {
+#if DEBUG
+            printf("DJ Move forward\n");
+#endif
+            pDir.push(1);
+        }
+#if DEBUG
+        printf("\nDJ Travel distance (total edge weight traveled) : %i", graph->nWeight[i]);
+        printf("\n\n");
+#endif
 
-        }//end-if
-
-    }//end for-loop
-
-    int xTick=src, yTick=dest;
-    while(!visitedNodes.empty())
-    {
-        graph->edgeWeight[xTick][yTick] = visitedNodes.top();
-        printf("Ticks: %i >> ", graph->edgeWeight[xTick][yTick].ticks);
-        visitedNodes.pop();
-    }
+    }//end-if
 
 
-    printf("Node traversal: ");
+//    int xTick=src, yTick=dest;
+//#if DEBUG
+//        printf("DJ NODES:");
+//#endif
+//    while(!visitedNodes.empty())
+//    {
+//        graph->edgeWeight[xTick][yTick] = visitedNodes.top();
+//#if DEBUG
+//        printf(" %i >> ", graph->edgeWeight[xTick][yTick].ticks);
+//#endif
+//        visitedNodes.pop();
+//    }
+
+#if DEBUG
+    printf("DJ Node traversal: ");
+#endif
     while(!mystack.empty())
     {
+#if DEBUG
         printf("%i >> ", mystack.top());
+#endif
         mystack.pop();
     }
+#if DEBUG
     printf("Done!\n\n");
-    printf("pDir size: %i\n\n", pDir.size());
+    printf("DJ pDir size: %i\n\n", pDir.size());
+#endif
     int arrSize = pDir.size();
-    int *arrayDir = array;
+    int *arrayDir = directions_ary_ptr;
     int index=0;
-
+    gNode *nodes_ary = nodes_ary_ptr;
 //  pDir.push(0);
-    printf(" 0 = stop \n 1 = forward \n 2 = right \n Directions traversal: ");
+#if DEBUG
+    printf("DJ 0 = stop \n 1 = forward \n 2 = right \n Directions traversal: ");
+#endif
     while(!pDir.empty())
     {
-        printf("%i", pDir.top());
+#if DEBUG
+        printf("DJ %i", pDir.top());
+#endif
         arrayDir[index]=pDir.top();
+        nodes_ary[index] = visitedNodes.top();
         index++;
         pDir.pop();
+        visitedNodes.pop();
     }
-
-    printf("\nEnd Print\n");
-
+#if DEBUG
+    printf("\nDJ End Print\n");
+#endif
     return arrayDir;
 }
 

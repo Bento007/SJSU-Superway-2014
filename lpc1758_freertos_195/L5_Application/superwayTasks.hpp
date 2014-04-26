@@ -22,12 +22,14 @@
 #include "dijkstra.hpp"
 #include "SNAP.H"
 #include "io.hpp"
-#include "shared_queues.hpp"
+#include "shared_handles.h"
 #include "lineFollower.hpp"
 
 
-#define Q_DELAY 100
-#define SEM_DELAY 5000
+#define QSEND_DELAY 10     //<how long queues wait to send
+#define QRECI_DELAY 100     //<how long queues wait to receive
+#define SEM_DELAY 5000  //<how long a tasks waits to get a semaphore
+#define SIZE    15      //<Detemines the size of an array
 
 /**********************************
  * Task Priorities
@@ -71,10 +73,10 @@ void updateTaskTest(void *p)
     xLastWakeTime = xTaskGetTickCount();
     while(1)
     {
-        xSemaphoreGive(ticks_sem);
 #if DEBUG
-        puts("Give ticks_sem");
+        puts("UP Give ticks_sem");
 #endif
+        xSemaphoreGive(ticks_sem);
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
@@ -91,10 +93,12 @@ void updateTask(void *p)
     while(1)
     {
         if(xSemaphoreTake(ticks_sem,SEM_DELAY))
-            wireless.send_Update();
+        {
 #if DEBUG
-        printf("update: %i\n",wireless.getLastUpdateTime());
+            printf("UP update: %i\n",wireless.getLastUpdateTime());
 #endif
+            wireless.send_Update();
+        }
     }
 }
 
@@ -109,7 +113,7 @@ void updateTask(void *p)
  void wirelessTask(void *p)
  {
 #if DEBUG
-     puts("Initializing WT");
+     puts("WT Initializing WT");
 #endif
      SNAP& wireless = SNAP::getInstance();
      wireless.init();
@@ -123,14 +127,14 @@ void updateTask(void *p)
      while(1)
      {
 #if DEBUG
-         puts("While loop of WT");
+         puts("WT While loop");
 #endif
          temp1 = 0;
          temp2 = 0;
          if(!wireless.RXempty())
          {
 #if DEBUG
-             puts("Inside if");
+             puts("WT Inside if");
 #endif
              switch(wireless.get_nextCMD())
              {
@@ -156,25 +160,25 @@ void updateTask(void *p)
                      break;
                  case 'D'://give pathingTask new destination//TODO: check for valid destination inputs
 #if DEBUG
-                     puts("Case D");
+                     puts("WT Case D");
 #endif
                      //TODO: add shared queue to send to pathing
                      if(wireless.get_newDest(&temp1))
                      {
 //                       Send new destination value to the State Machine
 #if DEBUG
-                             puts("Got Value!");
+                             puts("WT Got Value!");
                              printf("%i\n", temp1);
 #endif
 
                          LE.on(1);
-                         xQueueSend(newDestinationQ, &temp1, 100);
+                         xQueueSend(newDestinationQ, &temp1, QSEND_DELAY);
                      }
 
                      break;
                  default://send to SNAP invalid CMD
 #if DEBUG
-                     puts("inside switch");
+                     puts("WT inside switch");
 #endif
                      break;
 
@@ -182,12 +186,12 @@ void updateTask(void *p)
          }
 
 #if DEBUG
-         puts("before if");
+         puts("WT before if");
 #endif
      if(!wireless.recentlyUpdated(50))//update SNAP at least every 50ms
          wireless.send_Update();
 #if DEBUG
-     puts("After switch");
+     puts("WT After switch");
 #endif
      //     if(xQueueReceive(SMtoWireless, &pod, 100));
      //     Info was requested by a SNAP so send: the pod's speed, location, and name.
@@ -245,8 +249,12 @@ void StateMachine(void *p){
 //    podStatus pod;                          //Is this needed???
     int array[11], receive;
     path_t travelPath;
+    travelPath.destination=0;
+    travelPath.source=0;
 //    int start, end;
+#if DEBUG
     int dest;
+#endif
 
     /*
      * Variables the SNAP devices is tracking
@@ -259,9 +267,9 @@ void StateMachine(void *p){
     uint32_t ticks = 0;         //< ticks till merge, counting down.
     uint32_t loca = 0;          //< current section of track pod is traveling along.
 
-
+    bool newDest = false;       //< used to determine if the new destination is the same as current location
     /*One time functions*/
-    LD.setNumber(0);
+    LD.setRightDigit('0');
 
     //int speedChange;
     //TODO initialize structs to be used with inter-task comms.
@@ -280,7 +288,7 @@ void StateMachine(void *p){
 
         switch(current)
         {
-            case startup:   LD.setNumber(1);
+            case startup:   LD.setRightDigit('1');
                 /* check for values that didn't initialize, and test hardware
                  * if(everything good)
                  *  next = ready
@@ -289,7 +297,7 @@ void StateMachine(void *p){
                  */
 
 #if DEBUG
-            puts("Startup State");
+            puts("SM Startup State");
 #endif
 
                 dest = 0;
@@ -302,11 +310,11 @@ void StateMachine(void *p){
                 next = ready;
                 break;  //end startup-state
 
-            case ready: LD.setNumber(2);
+            case ready: LD.setRightDigit('2');
                 next = ready; //default until directions received.
 
 #if DEBUG
-                puts("In Ready state");
+                puts("SM In Ready state");
 #endif
 
 //                printf("\nSource: ");             //for debugging
@@ -317,61 +325,60 @@ void StateMachine(void *p){
 //                travelPath.destination = end;     //for debugging
 //                travelPath.source = 1;            //for debugging
 //                travelPath.destination = 8;       //for debugging
-                if(manualCmd){
+#if            manualCmd
 
-                    while(dest == 0){
+                while(dest == 0){
 
-                        if(SW.getSwitch(1)){
-                            dest = 8;
-                        }
-
-                        else if(SW.getSwitch(2))
-                            dest = 5;
+                    if(SW.getSwitch(1)){
+                        dest = 8;
                     }
-                    xQueueSend(newDestinationQ, &dest, 10);
-                    dest =0;
+                    else if(SW.getSwitch(2))
+                        dest = 5;
+                    }
+                    xQueueSend(newDestinationQ, &dest, QSEND_DELAY);
+                    dest = 0;
                 }
-
-            if(xQueueReceive(newDestinationQ, &travelPath.destination, 10))
-                {
+#endif
+                if(xQueueReceive(newDestinationQ, &travelPath.destination, QRECI_DELAY)
+                        && travelPath.destination != travelPath.source){
 #if DEBUG
-                puts("Destination received");
-                printf("Destination: %i\n", travelPath.destination);
+                    puts("SM Destination received");
+                    printf("SM Destination: %i\n", travelPath.destination);
 #endif
 
-                    xQueueSend(SMtoPath, &travelPath, 1);
+                    xQueueSend(SMtoPath, &travelPath, QSEND_DELAY);
 
                     //Retrieve the list of directions to be sent to the line follower
                     //Contents contained within "array"
-                    if(xQueueReceive(pathToSM, &receive, 10))
+                    if(xQueueReceive(pathToSM, &receive, QRECI_DELAY))
                     {
                         int i =0;
 
                         do{
                             array[i] = receive;
 #if DEBUG
-                            printf("received: %i\n", receive);
+                            printf("SM received: %i\n", receive);
 #endif
                             i++;
-                        }while(xQueueReceive(pathToSM, &receive, 10));
+                        }while(xQueueReceive(pathToSM, &receive, QRECI_DELAY));
 
 #if DEBUG
-                        puts("Sending to LF");
+                        puts("SM Sending to LF");
 #endif
                         LE.off(1);
                         for(int k=0; k<i; k++)
                         {
 #if DEBUG
-                            printf("Sending %i\n", array[k]);
+                            printf("SM Sending %i\n", array[k]);
 #endif
-                            xQueueSend(directionQ, &array[k], 0);  //send instructions to line follower.
+                            xQueueSend(directionQ, &array[k], QSEND_DELAY);  //send instructions to line follower.
                         }
 
                         travelPath.source = travelPath.destination;
                         //At this point, directions are received.
                         //TODO: Send directions to line follower task
 #if DEBUG
-                        puts("Going to roam");
+                        puts("SM Going to roam");
 #endif
                         next = roam;
 //                        delay_ms(100);
@@ -389,25 +396,25 @@ void StateMachine(void *p){
                 //send stop command to pod
                 break;  //end error-state
 
-            case roam:  LD.setNumber(3);
-                //Traveling mode
-                if(xQueueReceive(lineFollowertoSM, &receive, 2000))
+            case roam:  LD.setRightDigit('3');//Traveling mode
+                if(xQueueReceive(lineFollowertoSM, &receive, QRECI_DELAY))
                 {
-//                    delay_ms(100);
+
 #if DEBUG
-                    puts("Going to ready state");
+                    puts("SM Going to ready state");
+//                    delay_ms(100);
 #endif
                     next = pickup;
                 }
 #if DEBUG
-                puts("roaming");
+                puts("SM roaming");
 #endif
                 //busy bit unset, means available.
                 //if NO directions
                 //--run around for fun
                 break;  //end roam-state
 
-            case pickup:    LD.setNumber(4);
+            case pickup:    LD.setRightDigit('4');
                 //Traveling mode
 
                 //have we reached station for pickup?
@@ -416,17 +423,23 @@ void StateMachine(void *p){
                 //else
                 //next = pickup;
                 next = load;
+#if DEBUG
+                puts("SM pickup");
 //                delay_ms(100);
+#endif
                 break;  //end pickup-state
 
-            case load:  LD.setNumber(5);
+            case load:  LD.setRightDigit('5');
                 //Waiting mode:
 
                 //same as unload basically.
                 //TODO:am i loaded? PUSH A BUTTON TO INDICATE LOADED
                 //if so
                 //next = dropoff
-
+#if DEBUG
+                puts("SM load");
+//                delay_ms(100);
+#endif
                 //else if at station, wait.
                 //next = load
                 next = dropoff;
@@ -434,7 +447,7 @@ void StateMachine(void *p){
 //                vTaskDelay(10);
                 break;  //end load-state
 
-            case dropoff:   LD.setNumber(6);
+            case dropoff:   LD.setRightDigit('6');
                 //Traveling mode
                 //busy bit set, same as pickup basically.
                 //reached correct destination?
@@ -442,12 +455,14 @@ void StateMachine(void *p){
 
                 //else
                 next = ready;
-
-//                next = unload;
+#if DEBUG
+                puts("SM dropoff");
 //                delay_ms(100);
+#endif
+//                next = unload;
                 break;  //end dropoff-state
 
-            case unload:    LD.setNumber(7);
+            case unload:    LD.setRightDigit('7');
                 //Waiting mode
                 //To simulate unloading, send stop to line follower
                 //delay a couple miliseconds to simulate.
@@ -455,6 +470,10 @@ void StateMachine(void *p){
 
 //                next = ready;
 //                delay_ms(100);
+#if DEBUG
+                puts("SM unload");
+//                delay_ms(100);
+#endif
                 break;  //end unload-state
 
             default:
@@ -493,43 +512,47 @@ void pathingTask(void *p)
 //         -List of directions via the directionQ queue. Can be array with
 //          instructions for each "node"
 
+    //Initialize variables
+    int directions_ary[SIZE];
+    int send = 50;
+    bool done;
+    bool start;
+    int *directions_ptr;
+    
+    //Initialize Structs
     path_t initPath;
+    dijkstra *mainGraph = new dijkstra;
+    gNode visitedNodes_ary[SIZE];
 
    while(1)
    {
-       int size = 15;
-       int array[size];
-       int send = 50;
-       bool done = false;
-       bool start = true;
-       if(xQueueReceive(SMtoPath, &initPath, 100)){
+       done = false;
+       start = true;
+       if(xQueueReceive(SMtoPath, &initPath, QRECI_DELAY)){
 #if DEBUG
-           printf("Entered Pathing, value: %i %i", initPath.source, initPath.destination);
+           printf("PT Entered Pathing, value: %i %i", initPath.source, initPath.destination);
 #endif
-
-           dijkstra *mainGraph = new dijkstra;
            makeGraph(mainGraph);
            dijkstraFunc(mainGraph, initPath.source);
-
-           int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
+           directions_ptr=print(mainGraph, initPath.source, initPath.destination, directions_ary,visitedNodes_ary, SIZE);
 #if DEBUG
-           printf("Got the array!\n");
+           printf("PT Got the directions_ary!\n");
 #endif
            int i=0;
 
         while(!done)
         {
-            send = directions[i];
+            send = directions_ptr[i];
 #if DEBUG
-            printf("Printing before SM: %i\n", send);
+            printf("PT Printing before SM:\n Dir:%i\n location:%i\n", directions_ptr[i], visitedNodes_ary[i].name.source);
 #endif
             if(!start && send == 0){
-                xQueueSend(pathToSM, &send,0);
+                xQueueSend(pathToSM, &send,QSEND_DELAY);
                 done = true;
                 break;
             }
 
-            xQueueSend(pathToSM, &send, 10);
+            xQueueSend(pathToSM, &send, QSEND_DELAY);
             start = false;
             i++;
         }

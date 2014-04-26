@@ -8,7 +8,7 @@
 #include <printf_lib.h>
 #include <semphr.h>
 #include "eint.h"
-#include "shared_queues.hpp"
+#include "shared_handles.h"
 
 
 
@@ -98,11 +98,11 @@ void loop() {    // all sensors are active low
 	  if(xQueueReceive(directionQ, &pop, 500)){
 
  #if DEBUG 
-      printf("LF %i", pop);
+      printf("LF %i\n", pop);
 #endif
 
 #if DEBUG 
- 		printf("Skip val: %i", skip);
+ 		printf("LF Skip val: %i\n", skip);
 #endif
 
       if(pop==2){
@@ -137,7 +137,7 @@ void turnRight(){
 	LD.setLeftDigit('R');
 
 #if DEBUG	
-	printf("right\n");
+	printf("LF right\n");
 #endif
 
 	while(exit){
@@ -153,7 +153,7 @@ void straight(){
 	LD.setLeftDigit('S');
 	
 #if DEBUG
-	printf("straight\n");
+	printf("LF straight\n");
 #endif
 
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b10 = turn right
@@ -174,7 +174,7 @@ void station(){
 
 	LD.setLeftDigit('0');
 #if DEBUG
-	printf("station\n");
+	printf("LF station\n");
 #endif
 
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b00 = RC mode
@@ -188,7 +188,7 @@ void RCmode(){
 		LD.setLeftDigit('G');
 
 #if DEBUG
-		printf("RCmode\n");
+		printf("LF RCmode\n");
 #endif
 
 		LPC_GPIO0->FIOCLR = (1 << AMUX);			// 0b00 = RC mode

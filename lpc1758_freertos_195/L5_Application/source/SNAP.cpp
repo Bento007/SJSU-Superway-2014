@@ -21,7 +21,7 @@
 //TODO if status says pod is free send it a new destination base on it's current location
 
 //SNAP::SNAP(uint8_t priority):scheduler_task("wireless", 512, priority, NULL)//for scheduler
-SNAP::SNAP(): status(1),speed(1),ticks(1),location(1), destination(1),mLastActivityTime(0)
+SNAP::SNAP(): status(1),speed(1),ticks(1),location(1), destination(1),mLastActivityTime(xTaskGetMsCount())
 {
    //add semaphore
 //   Uart3& wireless = Uart3::getInstance();

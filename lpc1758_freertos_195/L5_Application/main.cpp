@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "superwayTasks.hpp"
 #include "dijkstra.hpp"
-#include "shared_queues.hpp"
+#include "shared_handles.h"
 
 int main()
 {
@@ -16,7 +16,7 @@ int main()
     SMtoLineFollower = xQueueCreate(1, sizeof(int));
     tickEventQ = xQueueCreate(1, sizeof(int));  //experimental
 
-    //create the Semaphores in tasks...
+    //create the Semaphores in tasks....
     ticks_sem = xSemaphoreCreateBinary();
 
     //TODO: create other queues, if used.
