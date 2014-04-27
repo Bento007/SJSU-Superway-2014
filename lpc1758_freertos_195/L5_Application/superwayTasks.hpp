@@ -22,27 +22,120 @@
 #include "dijkstra.hpp"
 #include "SNAP.H"
 #include "io.hpp"
+#include "shared_handles.h"
+#include "lineFollower.hpp"
 
 
+#define QSEND_DELAY 10     //<how long queues wait to send
+#define QRECI_DELAY 200     //<how long queues wait to receive
+#define SEM_DELAY 100  //<how long a tasks waits to get a semaphore
+#define SIZE    15      //<Detemines the size of an array
 
-#define QDelay 100
 /**********************************
  * Task Priorities
  * --- State Machine:   Low
  * --- Pathing:         Medium
  * --- Wireless:        High
+ * --- updateTask:      High
+ * --- lineFollowerTask: ???
  ***********************************/
 
+void flash(int x)
+{
+    switch(x%15)
+    {
+        case 0: LE.setAll(0); break;
+        case 1: LE.setAll(1); break;
+        case 2: LE.setAll(3); break;
+        case 3: LE.setAll(7); break;
+        case 4: LE.setAll(15); break;
+        case 5: LE.setAll(14); break;
+        case 6: LE.setAll(12); break;
+        case 7: LE.setAll(8); break;
+        case 8: LE.setAll(0); break;
+        case 9: LE.setAll(8); break;
+        case 10: LE.setAll(12); break;
+        case 11: LE.setAll(14); break;
+        case 12: LE.setAll(15); break;
+        case 13: LE.setAll(7); break;
+        case 14: LE.setAll(3); break;
+        case 15: LE.setAll(1); break;
+        default: break;
+    }
+}
 /**********************************
- * Shared Queues
- **********************************/
-QueueHandle_t   SMtoWireless,       //State machine -> wireless
-                WirelesstoSM,       //Wireless -> State machine
-                SMtoLineFollower,   //State machine -> Line follower
-                lineFollowertoSM,   //Line follower -> State Machine
-                SMtoPath,           //State machine -> Pathing (djikstra)
-                directionQ;         //Pathing (djikstra) -> State machine
-//TODO: check if more queues are needed
+ * Line Follower Task
+ * -Uses queue "instructions"
+ *
+ *
+ ***********************************/
+
+void lineFollowerTask(void *p)
+{   setup();    //initialize the line follower
+    #if DEBUG
+        puts("LF Initialized");
+    #endif
+    while(1)
+    {
+        loop();//run lineFollower
+    }
+}
+
+/**********************************
+ * update Task
+ * -------------
+ * Receives data from state machine
+ * -through SMtoWireless queue.
+ * Can send data to state machine
+ * -through WirelesstoSM queue.
+ *********************************/
+void updateTaskTest(void *p)
+{
+    // Initialized variables
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = 500;
+    xLastWakeTime = xTaskGetTickCount();
+    #if DEBUG
+        puts("UPT Initialized");
+    #endif
+    while(1)
+    {
+        #if DEBUG
+            puts("UP Give ticks_sem");
+        #endif
+        xSemaphoreGive(ticks_sem);
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+void updateTask(void *p)
+{
+    // Initialized variables
+    SNAP& wireless = SNAP::getInstance();
+    WT_pkt received;
+    #if DEBUG
+        puts("UP Initialized");
+    #endif
+    //Task for testing tick updates
+    xTaskCreate(updateTaskTest, (const char*) "updateTaskTest", STACK_BYTES(1024), 0, 1, 0);
+
+    while(1)
+    {
+        if(xSemaphoreTake(ticks_sem,SEM_DELAY))
+        {
+//            if(xQueueSend(SMtoWireless, &received, QRECI_DELAY))
+//            {
+//
+//            }
+            #if DEBUG
+                printf("UP update: %u\n",wireless.getLastUpdateTime());
+            #endif
+            wireless.send_Update();
+
+
+        }
+    }
+}
 
 /**********************************
  * Wireless Task
@@ -54,41 +147,88 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
  *********************************/
  void wirelessTask(void *p)
  {
+    #if DEBUG
+         puts("WT Initialized");
+    #endif
      SNAP& wireless = SNAP::getInstance();
+     wireless.init();
+
+     //Wireless dependent tasks
+     xTaskCreate(updateTask, (const char*) "updateTask", STACK_BYTES(1024), 0, 1, 0);
+
 //     podStatus pod;
      uint32_t temp1,temp2;
+
      while(1)
      {
+        #if DEBUG
+             puts("WT While loop");
+        #endif
          temp1 = 0;
          temp2 = 0;
          if(!wireless.RXempty())
          {
+            #if DEBUG
+                 puts("WT Inside if");
+            #endif
              switch(wireless.get_nextCMD())
              {
-                 case 'U'://get a graph update and send it to pathing
+                 vTaskDelay(100);
+                 case 'U'://get a graph update and send it to pathing //TODO: make graph dynamic
                      wireless.get_TrackUpdate(&temp1, &temp2);
                      //TODO: add shared queue to send to pathing
+                     /* Description:
+                      * In this case, a wireless command was received
+                      * to change the weight of a particular part of
+                      * the system track, this requires updating the
+                      * graph in the pathing algorithm. Needs to be
+                      * implemented.
+                      */
                      break;
-                 case 'M'://tell stateMachineTask to change speed for merge
+                 case 'M'://tell stateMachineTask to change speed for merge//TODO: test
                      temp1 = wireless.get_Merge();
                      //TODO: add shared queue to send to statemachine
                      break;
-                 case 'E'://give pathingTask a graph update
+                 case 'E'://give pathingTask a graph update//TODO: make graph dynamic
                      temp1 = wireless.get_Help();
                      //TODO: add shared queue to send to pathing
                      break;
-                 case 'D'://give pathingTask new destination
+                 case 'D'://give pathingTask new destination//TODO: check for valid destination inputs
+                    #if DEBUG
+                         puts("WT Case D");
+                    #endif
                      //TODO: add shared queue to send to pathing
-                     temp1 = wireless.get_newDest(&temp1);
+                     if(wireless.get_newDest(&temp1))
+                     {
+//                       Send new destination value to the State Machine
+                        #if DEBUG
+                             puts("WT Got Value!");
+                             printf("%u\n", temp1);
+                        #endif
+
+                         LE.on(1);
+                         xQueueSend(newDestinationQ, &temp1, QSEND_DELAY);
+                     }
+
                      break;
                  default://send to SNAP invalid CMD
+                    #if DEBUG
+                         puts("WT inside switch");
+                    #endif
                      break;
 
              }
          }
 
-     if(wireless.recentlyUpdated(50))//update SNAP at least every 50ms
+    #if DEBUG
+         puts("WT before if");
+    #endif
+     if(!wireless.recentlyUpdated(50))//update SNAP at least every 50ms
          wireless.send_Update();
+
+    #if DEBUG
+         puts("WT After switch");
+    #endif
      //     if(xQueueReceive(SMtoWireless, &pod, 100));
      //     Info was requested by a SNAP so send: the pod's speed, location, and name.
      //     from inside podStatus "pod" struct. This is retrieved from State machine task.
@@ -103,18 +243,235 @@ QueueHandle_t   SMtoWireless,       //State machine -> wireless
      //             Note: Status not yet implemented. (OPTIONAL).
      //     -Time:
      //        Not sure what to do with this... yet. (optional?)
-     }
-
+//     vTaskDelay()
+     }//end while
  }
 
-/***********************************
- * Djikstra Task
+void StateMachine(void *p){
+    /*initialize variables here*/
+    PRT_States current= startup, next =  startup;
+    SM_pkt dir_ary[SIZE], receive;
+    path_t travelPath;// start up with no destination
+    travelPath.destination=0;
+    travelPath.source=0;
+    int count, i,k; //used to flash the LEDS
+    bool loop = false;
+    #if DEBUG
+//        int start, end;
+        int dest;
+    #endif
+
+    /*
+     * Variables the SNAP devices is tracking
+     * They will be updated every time the
+     * state machine task runs.
+     */
+    SNAP& wireless = SNAP::getInstance();
+    uint32_t speed = 0;         //< current speed or speed mode ex. "Fast, slow, stop"
+    uint32_t ticks = 0;         //< ticks till merge, counting down.
+    uint32_t loca = 0;          //< current section of track pod is traveling along.
+
+    bool newDest = false;       //< used to determine if the new destination is the same as current location
+    /*One time functions*/
+    LD.setRightDigit('0');
+
+    //int speedChange;
+    //TODO initialize structs to be used with inter-task comms.
+    //TODO initialize memory, if any is used
+    //int errorCounter=0;
+
+    #if DEBUG
+        puts("SM Initialized");
+    #endif
+    /*begin state machine*/
+    while(1)
+    {
+        /*reset these values at the beginning of each loop
+         * to prevent accidently reuse */
+
+//          Check queues for any information from other tasks.
+//        if(xQueueReceive(directions, type, 100))              //new directions arrived.
+//        if(xQueueReceive(WirelesstoSM, &speedChange, 100))    //set new speed
+
+        switch(current)
+        {
+            case startup:   LD.setRightDigit('1');
+                /* check for values that didn't initialize, and test hardware
+                 * if(everything good)
+                 *  next = ready
+                 * else
+                 *  next = error
+                 */
+
+                #if DEBUG
+                    puts("SM Startup State");
+                    dest = 0;
+                #endif
+
+                //Read from sensors, do quick check?
+                //Send/Receive from SNAP a comm check
+                //errorCounter++;
+                //if all good, go to ready.
+                travelPath.source = 1;            //for debugging
+                next = ready;
+                break;  //end startup-state
+
+            case ready: LD.setRightDigit('2');
+                next = ready; //default until directions received.
+
+                #if DEBUG
+                    puts("SM In Ready state");
+                #endif
+
+//                printf("\nSource: ");             //for debugging
+//                scanf("%u", &start);              //for debugging
+//                printf("\nEnd: ");                //for debugging
+//                scanf("%u", &end);                //for debugging
+//                travelPath.source = start;        //for debugging
+//                travelPath.destination = end;     //for debugging
+//                travelPath.source = 1;            //for debugging
+//                travelPath.destination = 8;       //for debugging
+                #if manualCmd
+
+                    while(dest == 0)
+                    {
+                        if(SW.getSwitch(1)){dest = 8; }
+                        else if(SW.getSwitch(2)){ dest = 5; }
+                        xQueueSend(newDestinationQ, &dest, QSEND_DELAY);
+                        dest = 0;
+                    }
+                #endif
+
+                if(xQueueReceive(newDestinationQ, &travelPath.destination, QRECI_DELAY)
+                        && travelPath.destination != travelPath.source)
+                {
+                    #if DEBUG
+                        puts("SM Destination received");
+                        printf("SM Destination: %u\n", travelPath.destination);
+                    #endif
+
+                    xQueueSend(SMtoPath, &travelPath, QSEND_DELAY); //Give pathing source and destination
+
+                    i = 0;// set to 0 to iterate through array
+                    next = receiveDir;
+                }//end ready if wireless received
+                break;  //end ready-state
+            case error: LD.setLeftDigit('A');
+//                errorCounter =0;
+                //send error status to the snap/computer
+                //save error info
+                //send stop command to pod
+                break;  //end error-state
+            case travel:  LD.setRightDigit('3');//Traveling mode
+                #if DEBUG
+                    puts("SM Sending to LF");
+                #endif
+//                LE.off(1);
+                if( k < i )
+                {
+                    #if DEBUG
+                        printf("SM Sending %u\n", dir_ary[k].dir);
+                    #endif
+                    //send instructions to line follower.
+                    xQueueSend(directionQ, &dir_ary[k].dir, QSEND_DELAY);
+                    wireless.update_SNAP(dir_ary[k].loc.name.source
+                            ,dir_ary[k].loc.status,dir_ary[k].loc.ticks,
+                            dir_ary[k].loc.type);//update SNAP object.
+                    k++;
+                }
+                else
+                {
+                    travelPath.source = travelPath.destination;
+                    next = arrive;
+                }
+                //At this point, directions are received.
+                #if DEBUG
+                    puts("SM traveling");
+                #endif
+                break;  //end travel-state
+//            case pickup: LD.setRightDigit('4');
+//                //Traveling mode
+//
+//                //have we reached station for pickup?
+//                // next = load;
+//
+//                //else
+//                //next = pickup;
+//                next = load;
+//                #if DEBUG
+//                    puts("SM pickup");
+////                    delay_ms(100);
+//                #endif
+//                break;  //end pickup-state
+            case load:  LD.setRightDigit('L');
+                //Waiting mode:
+
+                //same as unload basically.
+                //TODO:am i loaded? PUSH A BUTTON TO INDICATE LOADED
+                //if so
+                //next = dropoff
+                #if DEBUG
+                    puts("SM load");
+//                    delay_ms(100);
+                #endif
+                //else if at station, wait.
+                //next = load
+                next = travel;
+//                delay_ms(100);
+//                vTaskDelay(10);
+                break;  //end load-state
+            case receiveDir: LD.setRightDigit('R');
+                //Retrieve the list of directions to be sent to the line follower
+                //Contents contained within "dir_ary"
+                if(xQueueReceive(pathToSM, &dir_ary[i], QRECI_DELAY))
+                {
+                        #if DEBUG
+                            printf("SM received: %u @ %u\n",
+                                    dir_ary[i].dir, dir_ary[i].loc.name.source);
+                        #endif
+                        i++;
+                 }
+                else
+                 {
+                     next = load;
+                     k = 0;
+                 }
+                break;
+            case arrive: LD.setRightDigit('A');
+                if(xQueueReceive(lineFollowertoSM, &receive, QRECI_DELAY))
+                {
+                    #if DEBUG
+                        puts("SM Going to ready state");
+    //                        delay_ms(100);
+                    #endif
+                    next = ready;
+                }
+                #if DEBUG
+                    puts("SM Arrived");
+//                        delay_ms(100);
+                #endif
+            //busy bit unset, means available.
+            //if NO directions
+            //--run around for fun
+            default:
+                next = error;
+                break;  //end default-state
+        }
+        current = next;                                     // store the next state
+//        wireless.update_SNAP(dir_ary[k].loc);   //update SNAP object.
+    }
+
+}
+
+
+/***************************************
+ * Djikstra Task (Phased out code)
  * -------------
  * Sends info to state machine thru
  * -directions queue.
  * Receives data from SM thru
  * -SMtoPath queue.
- ***********************************/
+ ***************************************/
 
 void pathingTask(void *p)
 {
@@ -132,277 +489,60 @@ void pathingTask(void *p)
 //         -List of directions via the directionQ queue. Can be array with
 //          instructions for each "node"
 
-    path initPath;
+    //Initialize variables
+    SM_pkt directions_ary[SIZE];
+    SM_pkt send;
+    bool done;
+    bool start;
+    
+    //Initialize Structs
+    path_t initPath;
+    dijkstra *mainGraph = new dijkstra;
+
+    #if DEBUG
+        puts("PT Initialized");
+    #endif
 
    while(1)
    {
-       int size = 15;
-       int array[size];
-       int send = 50;
-       bool done = false;
-       bool start = true;
-       if(xQueueReceive(SMtoPath, &initPath, 100)){
-           dijkstra *mainGraph = new dijkstra;
+       done = false;
+       start = true;
+       if(xQueueReceive(SMtoPath, &initPath, QRECI_DELAY)){
+        #if DEBUG
+           printf("PT Entered Pathing, value: %u %u", initPath.source, initPath.destination);
+        #endif
            makeGraph(mainGraph);
            dijkstraFunc(mainGraph, initPath.source);
+           print(mainGraph, initPath.source, initPath.destination,directions_ary, SIZE);
+       #if DEBUG
+           printf("PT Got the directions_ary!\n");
+       #endif
+       int i=0;
 
-           int *directions=print(mainGraph, initPath.source, initPath.destination, array, size);
-//            printf("Got the array!\n");
-           int i=0;
-           while(!done)
-           {
-               send = directions[i];
+        while(!done)
+        {
+            send = directions_ary[i];
+            #if DEBUG
+                printf("PT Printing before SM: Dir:%i location:%i\n",
+                        directions_ary[i].dir, directions_ary[i].loc.name.source);
+            #endif
+            if(!start && send.dir == 0){
+                xQueueSend(pathToSM, &send,QSEND_DELAY);
+                done = true;
+                break;
+            }
 
-               if(!start && send == 0){
-                   xQueueSend(directionQ, &send,0);
-                   done = true;
-                   break;
-               }
-
-               xQueueSend(directionQ, &send, 10);
-               start = false;
-               i++;
-           }
-           printf("\n\n");
+            xQueueSend(pathToSM, &send, QSEND_DELAY);
+            start = false;
+            i++;
+        }
+        #if DEBUG
+            printf("\n\n");
+        #endif
        }
    }
 }
 
-/************************************
- * State Machine Code Below
- ***********************************/
-enum PRT_States{
-    startup =1,     // initializes everything
-    ready   =2,     // waiting for direction
-    error   =3,     // error detected or initialize failed
-    roam    =4,     // no directions received driving around track
-    pickup  =5,     // directions received going to pick up location
-    load    =6,     // at stations loading
-    dropoff =7,     // in route to drop off
-    unload  =8,     // at destination and unloading passengers
-    emergency = 9   // an emergency has occured
-};
 
-//Directives will be sent to a queue that the line follower will receive and
-//will respond accordingly.
-enum Directives{
-    stop    =0,     //Make a full stop
-    forward =1,     //Continue going straight
-    turn    =2,     //Break from straight line, make the turn off
-    yield   =3,     //Slow the pod down
-    tMotors =100,   //command to initiate motor check
-    tSpdRd  =200,   //command to initiate speed sensor check
-    tQueue  =300    //command to test communication with line follower
-    //wait    =4      //Hold position
-};
-
-
-struct S{   //station
-        int bays;   // number of bays pods can load/load at.
-        int weight; // describes the time and distance it will take to travel.
-};
-
-struct F{   //fork
-        int weight; // describes the time and distance it will take to travel.
-};
-
-struct M{   //merge
-        /* Every length of track feeding into the merge point needs a weight
-         * and the name number of ticks till merge.
-         */
-        int weight1, // describes the time and distance it will take to travel.
-            weight2;
-//        .
-//        .
-//        .
-//        weightN;
-        int ticks;  // number of ticks till merge.
-};
-
-union nodeInfo{
-        struct M *merge;
-        struct F *fork;
-        struct S *station;
-};
-
-/*node structs describes the different sections of the track*/
-typedef struct node{
-        char type;                  // S=station, M = merge, F = fork, D= depot.
-        char name[4];               // identifies the nodes specific name.
-        union nodeInfo info ;       //points to the info about the node
-}trackSection;
-
-typedef struct{
-        /***********************************************
-         * podStatus structs are passed from the State
-         * machine to the Wireless task upon request
-         * from the Wireless task. Can occur at any time.
-         ***********************************************/
-        char name[4];
-        char type;
-        int speed;
-}podStatus;
-
-
-void StateMachine(void *p)
-{
-    /*initialize variables here*/
-//    Uart3& snap = Uart3::getInstance(); //initialize the snap UART3
-    PRT_States current= startup, next;
-    podStatus pod;
-    int array[11], receive;
-    uint8_t send;
-
-
-    /*
-     * Variables the SNAP devices is tracking
-     * They will be updated every time the
-     * state machine task runs.
-     */
-    SNAP& wireless = SNAP::getInstance();
-//  status = current;           //< status of the pod
-    uint32_t speed = 0;         //< current speed or speed mode ex. "Fast, slow, stop"
-    uint32_t ticks = 0;         //< ticks till merge, counting down.
-    uint32_t loca = 0;          //< current section of track pod is traveling along.
-
-    /*Initializes SPI (SSP) for comm with Arduino*/
-
-    /*One time functions*/
-    LD.setNumber(0);
-
-    //int speedChange;
-    //TODO initialize structs to be used with inter-task comms.
-    //TODO initialize memory, if any is used
-    //int errorCounter=0;
-    /*begin state machine*/
-    while(1)
-    {
-        //TODO determine the how long it takes to send a string of 32
-        /*reset these values at the beginning of each loop
-         * to prevent accidently reuse */
-
-//        To send from SM to line follower just do the following.
-//        if(!xQueueSend(directives, &command, 100))
-//            puts("Failed!\n");
-
-//          Check queues for any information from other tasks.
-//        if(xQueueReceive(directions, type, 100))              //new directions arrived.
-//        if(xQueueReceive(WirelesstoSM, &speedChange, 100))    //set new speed
-
-        switch(current)
-        {
-            case startup:   LD.setNumber(1);
-                /* check for values that didn't initialize, and test hardware
-                 * if(everything good)
-                 *  next = ready
-                 * else
-                 *  next = error
-                 */
-
-                //send command to arduino to "test" motors
-                //Read from sensors, do quick check?
-                //Send/Receive from SNAP a comm check
-                //Send/Receive a command to djikstra task, verify its alive.
-                //errorCounter++;
-                if(xQueueReceive(directionQ, &receive, 10))
-                {
-                    int i =0;
-        //            ssp1_ExchangeByte(0x55); //ready
-                    do{
-        //                LPC_GPIO0->FIODIR |= (1 << 30);  //set as output
-        //                LPC_GPIO0->FIOSET = (1 << 30);   //initially as high
-        //                LPC_GPIO0->FIOCLR = (1 << 30);   //drive low to CS
-                        array[i] = receive;
-                        printf("received: %i\n", receive);
-                        send = array[i];
-        //                ssp1_ExchangeByte(send); // send to arduino
-        //                ssp1_ExchangeByte(0x00);
-        //                acked = ssp1_ExchangeByte(0x00);
-
-        //                if(acked== 0x10)
-        //                    printf("acked %x\n", acked);
-                        i++;
-        //                LPC_GPIO0->FIOSET = (1 << 30);  //slave select goes High.
-        //                delay_ms(50);
-                    }while(xQueueReceive(directionQ, &receive, 10));
-                }
-                break;
-
-            case ready: LD.setNumber(2);
-                /* if(next direction == NULL)
-                 * --nextState
-                 * else
-                 * --next
-                 * check if directions queue is empty
-                 */
-                //if(direction ==NULL)//no directions for client
-                next = roam;
-
-                //else //has a direction to get clients
-                //next = pickup;
-                break;
-
-            case error: LD.setLeftDigit('A');
-//                errorCounter =0;
-                //send error status to the snap/computer
-                //save error info
-                //send stop command to pod
-                break;
-
-            case roam:  LD.setNumber(3);
-                //Traveling mode
-
-                //busy bit unset, means available.
-                //if NO directions
-                //--run around for fun
-                break;
-
-            case pickup:    LD.setNumber(4);
-                //Traveling mode
-
-                //have we reached station for pickup?
-                // next = load;
-
-                //else
-                //next = pickup;
-                break;
-
-            case load:  LD.setNumber(5);
-                //Waiting mode:
-
-                //same as unload basically.
-                //TODO:am i loaded? PUSH A BUTTON TO INDICATE LOADED
-                //if so
-                //next = dropoff
-
-                //else
-                //next = load
-                break;
-
-            case dropoff:   LD.setNumber(6);
-                //Traveling mode
-                //busy bit set, same as pickup basically.
-                //reached correct destination?
-                //go to unload
-
-                //else
-                //next = dropoff
-                break;
-
-            case unload:    LD.setNumber(7);
-                //Waiting mode
-                //To simulate unloading, send stop to line follower
-                //delay a couple miliseconds to simulate.
-                //next = ready
-                break;
-            default:
-                next = error;
-                break;
-        }
-        current = next;// store the next state
-        wireless.update_SNAP(loca, current,speed, ticks); //update SNAP object.
-    }
-
-}
 
 #endif /* SUPERWAYTASKS_HPP_ */
