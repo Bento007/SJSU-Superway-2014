@@ -13,8 +13,6 @@
 //#include "rtc.h"
 #include <stdint.h>
 #include "FreeRTOS.h"
-#include "queue.h"
-#include "semphr.h"
 #include "task.h"
 #include "singleton_template.hpp"  // Singleton Template
 
@@ -34,13 +32,13 @@ class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data i
  */
 
         bool send_Update();     //cmd -> 'U'updates the locals on the snap
-//        bool send_Estimated_Time_to_Merge(uint32_t speed, int ticks);  //cmd -> 'M'sends the estimated time to merge to the SNAP
+        bool send_Estimated_Time_to_Merge(uint32_t speed, int ticks);  //cmd -> 'M'sends the estimated time to merge to the SNAP
         bool send_Merge();//cmd -> 'M' sends a merge command to SNAP
         bool send_Help(uint8_t status, uint32_t location );                         //cmd -> 'E' sends help to SNAP
         bool send_Test();            //tests that the snap is working
         void send_Time();   //X<-cmd, R->cmd sends current RTC
 
-        bool get_newDest(uint32_t* dest);    //cmd <-> 'D' TODO:get new destination from network
+        bool get_newDest(uint32_t *dest);    //cmd <-> 'D' TODO:get new destination from network
         bool get_TrackUpdate(uint32_t* dest,uint32_t* weight); // cmd <- 'U' get an update for the graph
         char get_nextCMD();     //get the command from the snap     //get the command from the snap
         int get_Help();    //cmd <- 'E' get the help command from snap
@@ -50,9 +48,15 @@ class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data i
 
 //        bool recentlyActive(uint32_t ms);
         bool RXempty(); //checks if rx is empty
-		void update_SNAP(uint32_t loc,uint8_t sta,uint32_t spe, int tic);
+		void update_SNAP(uint32_t loc,uint8_t sta, uint32_t tic, uint8_t typ);
 
-        inline TickType_t getLastUpdateTime(void) const { return mLastActivityTime; }
+//        inline TickType_t getLastUpdateTime(void) const { return mLastActivityTime; }
+		inline TickType_t getLastUpdateTime(void) const
+		{
+            TickType_t lastTimeStampMs = MS_PER_TICK() * mLastActivityTime;
+            TickType_t currentTimeMs = xTaskGetMsCount();
+            return (currentTimeMs - lastTimeStampMs);
+		}
         inline void resetUpdateTime(void) { mLastActivityTime = xTaskGetMsCount(); }
         bool recentlyUpdated(unsigned int ms) const
         {
@@ -70,7 +74,7 @@ class SNAP : public SingletonTemplate<SNAP>//TODO make event driven. When data i
         uint32_t ticks;
         uint32_t location;
         uint32_t destination;
-        bool started;
+        uint8_t type;
         TickType_t mLastActivityTime;   ///< updated each time an update is sent
 };
 
