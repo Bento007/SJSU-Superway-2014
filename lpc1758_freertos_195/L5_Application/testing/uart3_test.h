@@ -192,16 +192,18 @@ bool snap_test()
     delay_ms(1000);
     SNAP::getInstance().init(); // initialize snap
 
+
     printf("SNAP time Test:\n");
     printf("b1: ^ b2: V b3: select\n");
     printf("0: back\n");
     printf("1: Set RTC from master and print time\n");
     printf("2: getDest_test();\n");
     printf("3: send_Update_Test()\n");
-    printf("4: send_Merge_Test()()\n");
-    printf("5: send_Help_Test()\n");
-    printf("6: send_Update_Test()\n");
-    printf("7: send_Time_Test()\n");
+    printf("4: send_Estimated_Time_to_Merge_Test\n");
+    printf("5: send_Merge_Test()()\n");
+    printf("6: send_Help_Test()\n");
+    printf("7: send_Update_Test()\n");
+    printf("8: send_Time_Test()\n");
     printf("...: Back\n\n");
 
     while(1)
@@ -212,9 +214,10 @@ bool snap_test()
             case 1: setuptime_test();  break;
             case 2: getDest_test();    break;
             case 3: send_Update_Test();break;
-            case 4: send_Merge_Test(); break;
-            case 5: send_Help_Test();  break;
-            case 6: send_Time_Test();  break;
+            case 4: send_Estimated_Time_to_Merge_Test(); break;
+            case 5: send_Merge_Test(); break;
+            case 6: send_Help_Test();  break;
+            case 7: send_Time_Test();  break;
             default: return 0; break;
         }
     }
@@ -266,24 +269,22 @@ void send_Update_Test()
     printf("send_Update_Test\n");
     printf("loc: %i\tStat: %i\tSpeed: %i\n",loc,status,speed);
 }
-//void send_Estimated_Time_to_Merge_Test()
-//{
-//    SNAP& com = SNAP::getInstance();
-//    uint32_t speed = 12,ticks = 99;
-//    com.send_Estimated_Time_to_Merge(speed, ticks);
-//    printf("send_Estimated_Time_to_Merge_Test\n");
-//    printf("speed: %i\tticks: %i\n",speed, ticks);
-//}
+void send_Estimated_Time_to_Merge_Test()
+{
+    SNAP& com = SNAP::getInstance();
+    uint32_t speed = 12,ticks = 99;
+    com.send_Estimated_Time_to_Merge(speed, ticks);
+    printf("send_Estimated_Time_to_Merge_Test\n");
+    printf("speed: %i\tticks: %i\n",speed, ticks);
+}
 void send_Merge_Test()
 {
     uint32_t location =32;
     uint8_t status = 2;
     uint32_t speed = 100;
-    uint32_t ticks =99;
+    int ticks =99;
     SNAP& com = SNAP::getInstance();
-    com.update_SNAP(location,status, speed, ticks);
-    com.send_Update();
-    com.send_Merge();
+    com.send_Merge(location,status,speed,ticks);
     printf("send merge test\n");
     printf("loc:%i\tstat:%i\tspeed:%i\ttick:%i\n",location,status,speed,ticks);
 }
