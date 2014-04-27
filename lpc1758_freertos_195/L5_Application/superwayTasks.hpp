@@ -77,6 +77,9 @@ void lineFollowerTask(void *p)
     #endif
     while(1)
     {
+        #if DEBUG
+            puts("LF RUN");
+        #endif
         loop();//run lineFollower
     }
 }
@@ -117,7 +120,7 @@ void updateTask(void *p)
         puts("UP Initialized");
     #endif
     //Task for testing tick updates
-    xTaskCreate(updateTaskTest, (const char*) "updateTaskTest", STACK_BYTES(1024), 0, 1, 0);
+//    xTaskCreate(updateTaskTest, (const char*) "updateTaskTest", STACK_BYTES(1024), 0, PRIORITY_LOW, 0);
 
     while(1)
     {
@@ -154,7 +157,7 @@ void updateTask(void *p)
      wireless.init();
 
      //Wireless dependent tasks
-     xTaskCreate(updateTask, (const char*) "updateTask", STACK_BYTES(1024), 0, 1, 0);
+     xTaskCreate(updateTask, (const char*) "updateTask", STACK_BYTES(1024), 0, PRIORITY_HIGH, 0);
 
 //     podStatus pod;
      uint32_t temp1,temp2;
@@ -356,7 +359,7 @@ void StateMachine(void *p){
                     next = receiveDir;
                 }//end ready if wireless received
                 break;  //end ready-state
-            case error: LD.setLeftDigit('A');
+            case error: LD.setRightDigit('E');
 //                errorCounter =0;
                 //send error status to the snap/computer
                 //save error info
@@ -373,11 +376,12 @@ void StateMachine(void *p){
                         printf("SM Sending %u\n", dir_ary[k].dir);
                     #endif
                     //send instructions to line follower.
-                    xQueueSend(directionQ, &dir_ary[k].dir, QSEND_DELAY);
+                    if(xQueueSend(directionQ, &dir_ary[k].dir, portMAX_DELAY))
+                        k++;
                     wireless.update_SNAP(dir_ary[k].loc.name.source
                             ,dir_ary[k].loc.status,dir_ary[k].loc.ticks,
                             dir_ary[k].loc.type);//update SNAP object.
-                    k++;
+
                 }
                 else
                 {
@@ -420,7 +424,7 @@ void StateMachine(void *p){
 //                delay_ms(100);
 //                vTaskDelay(10);
                 break;  //end load-state
-            case receiveDir: LD.setRightDigit('R');
+            case receiveDir: LD.setRightDigit('D');
                 //Retrieve the list of directions to be sent to the line follower
                 //Contents contained within "dir_ary"
                 if(xQueueReceive(pathToSM, &dir_ary[i], QRECI_DELAY))
@@ -438,7 +442,11 @@ void StateMachine(void *p){
                  }
                 break;
             case arrive: LD.setRightDigit('A');
-                if(xQueueReceive(lineFollowertoSM, &receive, QRECI_DELAY))
+                #if DEBUG
+                    puts("SM Arrived");
+                //                        delay_ms(100);
+                #endif
+                if(xQueueReceive(lineFollowertoSM, &receive, portMAX_DELAY))
                 {
                     #if DEBUG
                         puts("SM Going to ready state");
@@ -446,13 +454,11 @@ void StateMachine(void *p){
                     #endif
                     next = ready;
                 }
-                #if DEBUG
-                    puts("SM Arrived");
-//                        delay_ms(100);
-                #endif
+
             //busy bit unset, means available.
             //if NO directions
             //--run around for fun
+                break;
             default:
                 next = error;
                 break;  //end default-state

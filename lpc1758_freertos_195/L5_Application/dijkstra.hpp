@@ -157,7 +157,7 @@ void makeGraph(struct dijkstra* graph)
             setEdge(graph, 10, 7, 3, 3, fork, 10, 7, false, false, true, true);
 
             // M3 TO M1
-            setEdge(graph, 9, 3, 5, 5, merge, 9, 3, false, true, false, false);
+            setEdge(graph, 9, 3, 5, 5, merge, 9, 3, false, true, false, true);
 
 }
 
