@@ -115,7 +115,8 @@ void updateTask(void *p)
 {
     // Initialized variables
     SNAP& wireless = SNAP::getInstance();
-    WT_pkt received;
+//    WT_pkt received;
+    int count = 0; //for flash
     #if DEBUG
         puts("UP Initialized");
     #endif
@@ -124,7 +125,7 @@ void updateTask(void *p)
 
     while(1)
     {
-        if(xSemaphoreTake(ticks_sem,SEM_DELAY))
+        if(xSemaphoreTake(ticks_sem,portMAX_DELAY))
         {
 //            if(xQueueSend(SMtoWireless, &received, QRECI_DELAY))
 //            {
@@ -133,7 +134,9 @@ void updateTask(void *p)
             #if DEBUG
                 printf("UP update: %u\n",wireless.getLastUpdateTime());
             #endif
+            flash(count);
             wireless.send_Update();
+            count++;
 
 
         }
@@ -381,7 +384,6 @@ void StateMachine(void *p){
                     wireless.update_SNAP(dir_ary[k].loc.name.source
                             ,dir_ary[k].loc.status,dir_ary[k].loc.ticks,
                             dir_ary[k].loc.type);//update SNAP object.
-
                 }
                 else
                 {
@@ -421,8 +423,8 @@ void StateMachine(void *p){
                 //else if at station, wait.
                 //next = load
                 next = travel;
-//                delay_ms(100);
-//                vTaskDelay(10);
+//                delay_ms(2000);
+                vTaskDelay(2000);
                 break;  //end load-state
             case receiveDir: LD.setRightDigit('D');
                 //Retrieve the list of directions to be sent to the line follower
@@ -452,6 +454,7 @@ void StateMachine(void *p){
                         puts("SM Going to ready state");
     //                        delay_ms(100);
                     #endif
+                        vTaskDelay(2000);
                     next = ready;
                 }
 

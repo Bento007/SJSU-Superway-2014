@@ -136,7 +136,7 @@ void loop() {    // all sensors are active low
 
 void turnRight() {
     bool exit = true;
-    LD.setRightDigit('R');
+    LD.setLeftDigit('R');
     while (exit) {
         LPC_GPIO0->FIOSET = (1 << AMUX);    // 0b11 = go straight
         LPC_GPIO0->FIOSET = (1 << BMUX);
@@ -147,7 +147,7 @@ void turnRight() {
 }
 
 void straight() {
-    LD.setRightDigit('S');
+    LD.setLeftDigit('S');
     LPC_GPIO0->FIOCLR = (1 << AMUX);        // 0b10 = turn right
     LPC_GPIO0->FIOSET = (1 << BMUX);
     bool exit=true;
@@ -163,7 +163,7 @@ void straight() {
 }
 
 void station() {
-    LD.setRightDigit('0');
+    LD.setLeftDigit('0');
     LPC_GPIO0->FIOCLR = (1 << AMUX);        // 0b00 = RC mode
     LPC_GPIO0->FIOCLR = (1 << BMUX);
 //  delay_ms(5000);// debugging
@@ -176,7 +176,7 @@ void RCmode() {
     //                        delay_ms(100);
     #endif
     while (exit) {
-        LD.setRightDigit('G');
+        LD.setLeftDigit('G');
         LPC_GPIO0->FIOCLR = (1 << AMUX);            // 0b00 = RC mode
         LPC_GPIO0->FIOCLR = (1 << BMUX);
         if(getLLeft()&&getRRight()) {
@@ -189,14 +189,14 @@ void RCmode() {
 }
 
 void SWmode() {
-    LD.setRightDigit('P');
+    LD.setLeftDigit('P');
     LPC_GPIO2->FIOCLR = (1 << LEFTMOTOR);
     LPC_GPIO2->FIOSET = (1 << RIGHTMOTOR);
 
     // choose 0b01 = software mode
     LPC_GPIO0->FIOSET = (1 << AMUX);
     LPC_GPIO0->FIOCLR = (1 << BMUX);
-    delay_ms(100);// giving time for pod to get out of stop error
+//    delay_ms(100);// giving time for pod to get out of stop error
 }
 
 void tickFunction() {
