@@ -38,6 +38,33 @@ SemaphoreHandle_t ticks_sem;    //used to signal updateTask to go.
 /**********************************
  * Superway Strucutures
  **********************************/
+/************************************
+ * State Machine Code Below
+ ***********************************/
+enum PRT_States{
+    startup =1,     // initializes everything
+    ready   =2,     // waiting for direction
+    error   =3,     // error detected or initialize failed
+    roam    =4,     // no directions received driving around track
+    pickup  =5,     // directions received going to pick up location
+    load    =6,     // at stations loading
+    dropoff =7,     // in route to drop off
+    unload  =8,     // at destination and unloading passengers
+    emergency = 9   // an emergency has occured
+};
+
+//Directives will be sent to a queue that the line follower will receive and
+//will respond accordingly.
+enum Directives{
+    stop    =0,     //Make a full stop
+    forward =1,     //Continue going straight
+    turn    =2,     //Break from straight line, make the turn off
+    yield   =3,     //Slow the pod down
+    tMotors =100,   //command to initiate motor check
+    tSpdRd  =200,   //command to initiate speed sensor check
+    tQueue  =300    //command to test communication with line follower
+    //wait    =4      //Hold position
+};
 
 typedef struct path_t{
         uint32_t source;
@@ -62,6 +89,20 @@ struct gNode
     bool merge;
     bool fork;
     bool right;
+};
+
+struct WT_pkt
+{
+        uint32_t ticks;
+        track_t type;
+        path_t name;
+        PRT_States status;
+};
+
+struct SM_pkt
+{
+        uint32_t dir;   //direction
+        WT_pkt loc; //location data sent to wirless
 };
 
 /*

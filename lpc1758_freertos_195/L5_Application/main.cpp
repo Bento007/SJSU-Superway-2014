@@ -10,7 +10,7 @@ int main()
     SMtoPath = xQueueCreate(1, sizeof(path_t));
     directionQ = xQueueCreate(20, sizeof(int));
     newDestinationQ = xQueueCreate(1, sizeof(uint32_t));
-    pathToSM = xQueueCreate(20, sizeof(int));
+    pathToSM = xQueueCreate(20, sizeof(SM_pkt));
     lineFollowertoSM= xQueueCreate(1, sizeof(int));
     WirelesstoSM = xQueueCreate(1, sizeof(int));
     SMtoLineFollower = xQueueCreate(1, sizeof(int));

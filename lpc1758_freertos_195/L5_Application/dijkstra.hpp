@@ -18,19 +18,7 @@ using namespace std;
 #define INF 999
 #define vertices 11
 
-//typedef struct{
-//        int source;
-//        int destination;
-//}path;
 
-//struct gNode
-//{
-//    int value;
-//    bool station;
-//    bool merge;
-//    bool fork;
-//    bool right;
-//};
 struct dijkstra
 {
     gNode edgeWeight[MAX][MAX];
@@ -62,7 +50,14 @@ void setEdge(struct dijkstra *graphQ,int i,int j, uint32_t weight,
     graphQ->edgeWeight[i][j].fork= fork;
     graphQ->edgeWeight[i][j].right= right;
 }
-
+WT_pkt strip(gNode input)
+{
+    WT_pkt output;
+    output.name = input.name;
+    output.ticks= input.ticks;
+    output.type = input.type;
+    return output;
+}
 void makeGraph(struct dijkstra* graph)
 {
             std::queue<gNode> graphq;
@@ -304,43 +299,43 @@ void dijkstraFunc(struct dijkstra* graph, int src)
     and then prints from dest --> backwards --> src
 - I made a stack just because to make it easier to visualize which nodes are being visited
 */
-int* print(struct dijkstra* graph, int src, int dest, int *directions_ary_ptr,gNode *nodes_ary_ptr, int size)
+void print(struct dijkstra* graph, int src, int dest, SM_pkt *send_ary, int size)
 {
     stack<int> mystack, pDir;
-    stack<gNode> visitedNodes;
+    stack<WT_pkt> visitedNodes;
+    WT_pkt end;
+//    SM_pkt send_ary[size];
+    end.type = stations;
+    end.name.source = end.name.destination = dest;
+    int node1, node2, arrySize, index = 0;
 
-    int i, k, node1, node2;
-    i = dest;
-#if DEBUG
-    printf("\nDJ Instructions from source { %i } ", src);
-#endif
-
+    #if DEBUG
+        printf("\nDJ Instructions from source { %i } ", src);
+    #endif
     if (dest <= vertices)
     {
-#if DEBUG
-        printf("DJ to vertex { %i }", i);
-        printf(" is: \n");
-#endif
-        k = dest;
+        #if DEBUG
+            printf("DJ to vertex { %i }", dest);
+            printf(" is: \n");
+        #endif
         pDir.push(0);
-        mystack.push (k);
-        visitedNodes.push(graph->edgeWeight[dest][k]); // if destination reached, push src->dest node
-#if DEBUG
-        printf("DJ (Read from the bottom up) \n\n");
-#endif
-        while (graph->curPosition[k] != src)
+        mystack.push (dest);
+        visitedNodes.push(end); // if destination reached, push src->dest node
+        #if DEBUG
+            printf("DJ (Read from the bottom up) \n\n");
+        #endif
+        while (graph->curPosition[dest] != src)
         {
-            k = graph->curPosition[k];
+            dest = graph->curPosition[dest];
 
             node2 = mystack.top();
             /* Stores "Next" node (int) value so that I can access the node object! */
-            mystack.push (k);
+            mystack.push (dest);
             node1 = mystack.top();
             /* Stores "Current" node (int) value so that I can access the node object! */
-            visitedNodes.push(graph->edgeWeight[node1][node2]);
+            visitedNodes.push(strip(graph->edgeWeight[node1][node2]));
 
             /*EDITING FOR FREE RTOS*/
-
             if( graph->edgeWeight[node1][node2].right == true)
             // graph->edgeWeight[node1][node2].right is my node object
             {
@@ -363,26 +358,26 @@ int* print(struct dijkstra* graph, int src, int dest, int *directions_ary_ptr,gN
         src is not needed to find neighboring nodes
         */
         mystack.push(src);
-        visitedNodes.push(graph->edgeWeight[src][k]);
+        visitedNodes.push(strip(graph->edgeWeight[src][dest]));
         /*MODIFIED FOR FREERTOS; ORIGINAL IN COMMENTS*/
         if( graph->edgeWeight[src][node1].right)
         {
-#if DEBUG
-            printf("DJ ***TURN RIGHT\n");
-#endif
+            #if DEBUG
+                printf("DJ ***TURN RIGHT\n");
+            #endif
             pDir.push(2);
         }
         else
         {
-#if DEBUG
-            printf("DJ Move forward\n");
-#endif
+            #if DEBUG
+                printf("DJ Move forward\n");
+            #endif
             pDir.push(1);
         }
-#if DEBUG
-        printf("\nDJ Travel distance (total edge weight traveled) : %i", graph->nWeight[i]);
-        printf("\n\n");
-#endif
+        #if DEBUG
+            printf("\nDJ Travel distance (total edge weight traveled) : %i\n\n",
+                    graph->nWeight[dest]);
+        #endif
 
     }//end-if
 
@@ -391,52 +386,49 @@ int* print(struct dijkstra* graph, int src, int dest, int *directions_ary_ptr,gN
 //#if DEBUG
 //        printf("DJ NODES:");
 //#endif
-//    while(!visitedNodes.empty())
+//    while(!.empty())
 //    {
-//        graph->edgeWeight[xTick][yTick] = visitedNodes.top();
+//        graph->edgeWeight[xTick][yTick] = .top();
 //#if DEBUG
 //        printf(" %i >> ", graph->edgeWeight[xTick][yTick].ticks);
 //#endif
-//        visitedNodes.pop();
+//        .pop();
 //    }
 
-#if DEBUG
-    printf("DJ Node traversal: ");
-#endif
+    #if DEBUG
+        printf("DJ Node traversal: ");
+    #endif
     while(!mystack.empty())
     {
-#if DEBUG
-        printf("%i >> ", mystack.top());
-#endif
+        #if DEBUG
+            printf("%i >> ", mystack.top());
+        #endif
         mystack.pop();
     }
-#if DEBUG
-    printf("Done!\n\n");
-    printf("DJ pDir size: %i\n\n", pDir.size());
-#endif
-    int arrSize = pDir.size();
-    int *arrayDir = directions_ary_ptr;
-    int index=0;
-    gNode *nodes_ary = nodes_ary_ptr;
-//  pDir.push(0);
-#if DEBUG
-    printf("DJ 0 = stop \n 1 = forward \n 2 = right \n Directions traversal: ");
-#endif
-    while(!pDir.empty())
+    #if DEBUG
+        printf("Done!\n\n");
+        printf("DJ pDir size: %i\n\n", pDir.size());
+    #endif
+    #if DEBUG
+        printf("DJ 0 = stop \n 1 = forward \n 2 = right \n Directions traversal: ");
+    #endif
+    while(!pDir.empty() && index < size)
     {
-#if DEBUG
-        printf("DJ %i", pDir.top());
-#endif
-        arrayDir[index]=pDir.top();
-        nodes_ary[index] = visitedNodes.top();
+        #if DEBUG
+            printf("DJ %i", pDir.top());
+        #endif
+        send_ary[index].dir = pDir.top();
+        send_ary[index].loc = visitedNodes.top();
+//        arrayDir[index]=pDir.top();
+//        nodes_ary[index] = visitedNodes.top();
         index++;
         pDir.pop();
         visitedNodes.pop();
     }
-#if DEBUG
-    printf("\nDJ End Print\n");
-#endif
-    return arrayDir;
+    #if DEBUG
+        printf("\nDJ End Print\n");
+    #endif
+    return;
 }
 
 #endif /* DIJKSTRA_HPP_ */
