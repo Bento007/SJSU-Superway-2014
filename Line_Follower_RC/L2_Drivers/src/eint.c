@@ -51,7 +51,7 @@ void rightinterrupt()
 void EINT3_IRQHandler(void)
 {
 	LPC_GPIOINT->IO2IntClr = ( 0x3FFF << 0 );
-	if(!(LPC_GPIO2->FIOPIN & (1 << 7)))		// check RRIGHTSENSOR = 7
+	if(!(LPC_GPIO2->FIOPIN & (1 << 3)))		// check LLEFTSENSOR = 3
 		callback(tick);
 
 //	if(LPC_GPIOINT->IntStatus & (1<<2))

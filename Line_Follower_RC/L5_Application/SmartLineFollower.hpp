@@ -40,6 +40,7 @@ void SWmode();
 void setLeftMotor(bool set);
 void setRightMotor(bool set);
 void tickFunction();
+int deleteme=0;
 
 bool getRRight(void)
 {
@@ -83,7 +84,7 @@ void setup() {
 	LPC_GPIO0->FIODIR |= (1 << AMUX);
 	LPC_GPIO0->FIODIR |= (1 << BMUX);
 
-	eint3_enable_port2(LLEFTSENSOR, eint_rising_edge, tickFunction);
+	eint3_enable_port2(RRIGHTSENSOR, eint_rising_edge, tickFunction);
   // 2 = turn right
   // 1 = straight
   // 0 = station
@@ -98,9 +99,16 @@ void loop() {    // all sensors are active low
   int pop;
   bool rightTurn=false;
 
-
+  xQueueSend(instructions, &gostation, portMAX_DELAY);
+  xQueueSend(instructions, &gostraight, portMAX_DELAY);
+  xQueueSend(instructions, &gostraight, portMAX_DELAY);
+  xQueueSend(instructions, &gostraight, portMAX_DELAY);
+  xQueueSend(instructions, &gostraight, portMAX_DELAY);
+  xQueueSend(instructions, &goright, portMAX_DELAY);
+  xQueueSend(instructions, &goright, portMAX_DELAY);
+  xQueueSend(instructions, &gostation, portMAX_DELAY);
   while(1){
-	  xQueueSend(instructions, &gostraight, portMAX_DELAY);
+
 	  RCmode(tickgiven);
 	  if(!xQueueReceive(instructions, &pop, 500))
 		  printf("nothing in queue!\n");
@@ -192,6 +200,9 @@ void SWmode(){
 
 void tickFunction(){
 	xSemaphoreGive(ticks_sem);
+	u0_dbg_printf(" tick { %c }", deleteme+48);
+	LE.setAll(deleteme+48);
+	deleteme++;
 }
 
 //void setLeftMotor(bool set)
