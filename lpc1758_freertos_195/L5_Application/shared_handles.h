@@ -102,7 +102,7 @@ struct WT_pkt
 struct SM_pkt
 {
         uint32_t dir;   //direction
-        WT_pkt loc; //location data sent to wirless
+        WT_pkt loc;     //location data sent to wireless
 };
 
 /*
