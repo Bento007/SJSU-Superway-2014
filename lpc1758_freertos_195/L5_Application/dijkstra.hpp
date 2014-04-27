@@ -79,9 +79,9 @@ void makeGraph(struct dijkstra* graph)
 {
             std::queue<gNode> graphq;
             int i, j;
-            for (i = 1; i <= vertices; i++)
+            for (i = 1; i <= VERTICES; i++)
             {
-                for (j = 1; j <= vertices; j++)
+                for (j = 1; j <= VERTICES; j++)
                 {
                     graph->edgeWeight[i][j].weight=999;
                 }
@@ -167,7 +167,7 @@ void makeGraph(struct dijkstra* graph)
 void initialize(struct dijkstra* graph, int src)
 {
     /*src node = 0*/
-    for (int i = 1; i <= vertices; i++)
+    for (int i = 1; i <= VERTICES; i++)
     {
         graph->nWeight[i] = graph->edgeWeight[src][i].weight;
         graph->visited[i] = 0;
