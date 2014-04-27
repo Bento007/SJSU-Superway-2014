@@ -14,38 +14,38 @@
 * @param type The type of interrupt.
 * @param func The callback function.
 */
-void (*leftptr)();
-void (*rightptr)();
+//void (*leftptr)();
+//void (*rightptr)();
 void (*tick)();
 
-int leftspeed = 6;
-int rightspeed = 7;
-int timer1;
-int timer2;
-int timer3;
-int timer4;
-int deltaleft;
-int deltaright;
+//int leftspeed = 6;
+//int rightspeed = 7;
+//int timer1;
+//int timer2;
+//int timer3;
+//int timer4;
+//int deltaleft;
+//int deltaright;
 
 void callback(void (*ptr)()){ // callback function
 	ptr();
 }
-void leftinterrupt()
-{
-	timer2 = sys_get_high_res_timer_us();
-	deltaleft = timer2 - timer1;
-	printf("deltaleft = %i  \n", deltaleft);
-
-	timer1 = sys_get_high_res_timer_us();
-}
-void rightinterrupt()
-{
-	timer3 = sys_get_high_res_timer_us();
-	deltaright = timer3 - timer4;
-	printf("     deltaright = %i  \n", deltaright);
-	timer4 = sys_get_high_res_timer_us();
-
-}
+//void leftinterrupt()
+//{
+//	timer2 = sys_get_high_res_timer_us();
+//	deltaleft = timer2 - timer1;
+//	printf("deltaleft = %i  \n", deltaleft);
+//
+//	timer1 = sys_get_high_res_timer_us();
+//}
+//void rightinterrupt()
+//{
+//	timer3 = sys_get_high_res_timer_us();
+//	deltaright = timer3 - timer4;
+//	printf("     deltaright = %i  \n", deltaright);
+//	timer4 = sys_get_high_res_timer_us();
+//
+//}
 
 
 void EINT3_IRQHandler(void)
@@ -107,5 +107,5 @@ void eint3_enable_port2(uint8_t pin_num, eint_intr_t type, void_func_t func)
 	{
 		LPC_GPIOINT->IO2IntEnF |= ( 1 << pin_num);
 	}
-	NVIC_EnableIRQ(EINT3_IRQn);		// todo: crashing here
+	NVIC_EnableIRQ(EINT3_IRQn);
 }

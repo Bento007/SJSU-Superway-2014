@@ -35,11 +35,10 @@ void turnRight();
 void loop();
 void station();
 void straight();
-void RCmode(int &tickgiven);
+void RCmode();
 void SWmode();
-void setLeftMotor(bool set);
-void setRightMotor(bool set);
 void tickFunction();
+
 
 bool getRRight(void)
 {
@@ -62,8 +61,8 @@ bool getLLeft(void)
 	return !!(LPC_GPIO2->FIOPIN & (1 << LLEFTSENSOR));
 }
 
-xQueueHandle instructions;
-xSemaphoreHandle ticks_sem;
+//xQueueHandle instructions;
+//xSemaphoreHandle ticks_sem;
 
 void setup() {
 
@@ -91,41 +90,32 @@ void setup() {
 
 void loop() {    // all sensors are active low
   // LOW = white    HIGH = black
-  int goright=2;
-  int gostraight=1;
-  int gostation=0;
-  int tickgiven = 10;
+//  int goright=2;
+//  int gostraight=1;
+//  int gostation=0;
   int pop;
-  bool rightTurn=false;
+  int skip=0;
 
-  xQueueSend(instructions, &gostation, portMAX_DELAY);
-  xQueueSend(instructions, &gostraight, portMAX_DELAY);
-  xQueueSend(instructions, &gostraight, portMAX_DELAY);
-  xQueueSend(instructions, &gostraight, portMAX_DELAY);
-  xQueueSend(instructions, &gostraight, portMAX_DELAY);
-  xQueueSend(instructions, &goright, portMAX_DELAY);
-  xQueueSend(instructions, &goright, portMAX_DELAY);
-  xQueueSend(instructions, &gostation, portMAX_DELAY);
   while(1){
-
-	  RCmode(tickgiven);
-	  if(!xQueueReceive(instructions, &pop, 500))
-		  printf("nothing in queue!\n");
+	  RCmode();
+	  if(xQueueReceive(directionQ, &pop, 500)){
 
 	  if(pop==2){
 		turnRight();
 	  }
 	  if(pop==1){
-		if(rightTurn){
+		if(skip==1){
 			turnRight();
-			rightTurn=false;
+			skip++;
 		}
-		else
+		else{
 		  straight();
+		  skip++;}
 	  }
 	  if(pop==0){
 		station();
-		rightTurn=true;
+		skip =0;
+	  }
 	  }
   }
 }
@@ -133,7 +123,6 @@ void loop() {    // all sensors are active low
 void turnRight(){
 	bool exit=true;
 	LD.setRightDigit('R');
-//	printf("right\n");
 	while(exit){
 		LPC_GPIO0->FIOSET = (1 << AMUX);	// 0b11 = go straight
 		LPC_GPIO0->FIOSET = (1 << BMUX);
@@ -145,7 +134,6 @@ void turnRight(){
 
 void straight(){
 	LD.setRightDigit('S');
-	//printf("straight\n");
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b10 = turn right
 	LPC_GPIO0->FIOSET = (1 << BMUX);
 	bool exit=true;
@@ -162,17 +150,15 @@ void straight(){
 
 void station(){
 	LD.setRightDigit('0');
-//	printf("station\n");
 	LPC_GPIO0->FIOCLR = (1 << AMUX);		// 0b00 = RC mode
 	LPC_GPIO0->FIOCLR = (1 << BMUX);
-	delay_ms(5000);	// debugging
+//	delay_ms(5000);	// debugging
 }
 
-void RCmode(int &tickgiven){
+void RCmode(){
 	bool exit=true;
 	while(exit){
 		LD.setRightDigit('G');
-	//	printf("RCmode\n");
 		LPC_GPIO0->FIOCLR = (1 << AMUX);			// 0b00 = RC mode
 		LPC_GPIO0->FIOCLR = (1 << BMUX);
 		if(getLLeft()&&getRRight()) {
@@ -185,8 +171,6 @@ void RCmode(int &tickgiven){
 }
 
 void SWmode(){
-//	setLeftMotor(false);
-//	setRightMotor(true);
 	LD.setRightDigit('P');
 	LPC_GPIO2->FIOCLR = (1 << LEFTMOTOR);
 	LPC_GPIO2->FIOSET = (1 << RIGHTMOTOR);
@@ -194,32 +178,13 @@ void SWmode(){
 	// choose 0b01 = software mode
 	LPC_GPIO0->FIOSET = (1 << AMUX);
 	LPC_GPIO0->FIOCLR = (1 << BMUX);
-	delay_ms(100);		// giving time for pod to get out of stop error
+	delay_ms(100);		// giving time for pod to move out of stop error
 }
 
 void tickFunction(){
 	xSemaphoreGive(ticks_sem);
 }
 
-//void setLeftMotor(bool set)
-//{
-//	if(set==false){
-//		LPC_GPIO2->FIOCLR = (1 << leftmotor);
-//	}
-//	if(set==true){
-//		LPC_GPIO2->FIOSET = (1 << leftmotor);
-//	}
-//}
-//
-//void setRightMotor(bool set)
-//{
-//	if(set==false){
-//		LPC_GPIO2->FIOCLR = (1 << rightmotor);
-//	}
-//	if(set==true){
-//		LPC_GPIO2->FIOSET = (1 << rightmotor);
-//	}
-//}
 
 
 #endif /* SMARTLINEFOLLOWER_HPP_ */
