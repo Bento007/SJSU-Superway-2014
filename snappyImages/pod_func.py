@@ -16,7 +16,7 @@ active = 0  #must be set before the pod can get directions
     """
 cTime = 0 #last time
 cSped = 0 #last speed
-cLoca = 0 #last location
+cLoca = 1 #last location
 cStat = 0 #last status
 cTick = 0 #last ticks till merge. Tick needs a time stamp connected to it.
 
@@ -32,60 +32,11 @@ dropoff =7     #// in route to drop off
 unload  =8     #// at destination and unloading passengers
 emergency = 9  #// an emergency has occured
 
-cDest = 0 #current Destination
+cDest = 5 #current Destination
 nDest = 0 #next Destination #don't know what to do with it yet.
 
 cETM = 0   #Estimated time till merge in seconds. Used in merging
 rETM = 0  #estimnated time till merge in seconds of remote pod. Used in merge
-# def COM(cmd,data):              #Status: WIP
-#     """handle commands from StdInput
-#     """
-#     n = len(data)
-#     param = 0
-#     i = 0
-#     j = 0
-#     while(i < n):
-#         c = data[i]
-#         i += 1
-#         if c == ',':
-#             if param == 0:
-#                 temp0 = data[j:i-1]
-#             elif param == 1:
-#                 temp1 = data[j:i-1]
-#             elif param == 2:
-#                 temp2 = data[j:i-1]
-#             elif param == 3:
-#                 temp3 = data[j:i-1]
-#             elif param == 4:
-#                 temp4 = data[j:i-1]
-#             elif param == 5:
-#                 temp5 = data[j:i-1]
-#             j=i
-#             param +=1
-#                       #Desc        CMD    Target Address
-#     if cmd == 'U':    #get update  U
-#         setLocals(temp0, temp1, temp2, temp3,temp4, temp5)
-#     elif cmd == 'M':  #merge       M
-#         merge()
-#     elif cmd == 'E':  #help        E    multicasted
-#         setStatus(temp0,temp1)
-#         emergency()
-#     elif cmd == 'D':
-#         getDest()
-#     elif cmd == 'X':
-#         rpc(PORTAL_ADDR,'callback','getTime','getTimeRPC')
-#     elif cmd =='T':
-#         test()
-#     elif cmd =='P':
-#         print data
-#     elif cmd == 2:  #stop        0x02    addr
-#         rpc(addr, stopRPC)
-#     elif cmd == 3:  #slow        0x03    addr    
-#         rpc(addr, slowRPC)
-#     elif cmd == 4:  #speed       0x04    addr
-#         pass
-#     elif cmd ==255:   #local       0xFF
-#         pass
         
 #-----EMERGENCY FUNCTIONS
 def emergency(): #status Done, not tested
@@ -123,10 +74,7 @@ def mergeRPC(remoteETM,remoteLoca): #Status: WIP
             temp = 4 + cETM #temp should be a negative number
             rpc( rpcSourceAddr, 'slowRPC', temp ) #tell other pod to slow
         elif( cETM == remoteETM ):   #whomever is to the right goes first
-            #action = rpc( rpcSourceAddr,'callback', 'yieldResults','yieldRPC', yields ) #tell other pod to slow
             rpc( rpcSourceAddr,'callback', 'yieldResults','yieldRPC', yields ) #tell other pod to slow
-            #if not action: #yield fails
-            #    ETM = remoteETM + 4
 
 def yieldResults( x ):
     """Used to get the return value of the yeildRPC call"""
@@ -139,9 +87,6 @@ def register():
         rpc( PORTAL_ADDR, 'registerRPC', cLoca)
 def registerRPC():
     pass
-# def stopRPC(time):  #Status: WIP
-#     """tells a pod to stop ASAP"""
-#     print "H "
 def slow(newETM):  #Status: Done, not tested
     """tells a pod to slow down a time or speed"""
     global cETM
@@ -183,25 +128,15 @@ def getETM():
     print "M",cETM
 def getGlobals():  #status: Done, Tested
     """Prints out all of the globals values"""
-#     print "\ncmd: " , cmd
-#     print "\naddr: ", addr
-#     print "\ndata: ", data
     print "\ncTime: ", cTime
     print "\nlSped: ", cSped
     print "\nlLoca: ", cLoca
-#     print "\nlTick: ", lTick
     print "\nlStat: ", cStat
     print "cDest: ", cDest
     print "nDest: ", nDest
     print "yields: ", yields 
-#
-#
 
 #-----SETTER FUNCTIONS(for manually setting values from Portal)
-# def setCMD(x):  #status: Done, Tested
-#     """Used for testing CMD"""
-#     global cmd
-#     cmd = x
 def setActive():
     global active#, cDest
     #cDest = 8
@@ -209,15 +144,8 @@ def setActive():
 def getTimeRPC():
     #rpc(PORTAL_ADDR'callback','getTime','getTimeRPC')
     rpc(PORTAL_ADDR, 'getTimeRPC')
-#def getTime(xTime):
-#    print xTime[0],' ',xTime[1],' ',xTime[2],' ',xTime[3],' ',xTime[4],' ',xTime[5],' ',xTime[6],' ',xTime[7]
 def getTime(yyyy,mm,dd,hh,min,ss,dow,doy):  #TODO finish
     print "X ",yyyy,' ',mm,' ',dd,' ',hh,' ',min,' ',ss,' ',dow,' ',doy
-# def setDest(destIn):    #status: Done, Tested
-#     global cDest
-#     if cLoca == cDest: # if you're at your destination, then you can receive a new destination
-#         cDest = destIn
-#         getDest()
     
 def setRoute(PU, DO):    #status: Done, Tested
     global cDest, nDest
@@ -244,26 +172,20 @@ def setStatus(x,y):
     global cStat, cLoca
     cStat = x
     cLoca = y
-def setLocals(Time, Loca, Dest, Stat, Sped,Tick, ETM): #Status: Done, not tested
+def setLocals(Time, Loca, Stat,Tick): #Status: Done, not tested
     """Updates the local values from pod to share
         with other pods."""
     global cDest, nDest, cTime, cLoca, cSped, cStat,cTick, yields, cETM
+    #rpc(PORTAL_ADDR,'printLocals',Time,Loca,Stat,Tick)
     
-    if cTime != Time: #if the last update is the same as current don't change anything
-        cTime = Time
-        cSped = Sped
-        cStat = Stat
-        cTick = Tick
-        cETM = ETM
-        if cDest != Dest:
-            getDest()
-        #if cLoca == cDest & cStat == ready: #check if at location
-        if readyForNextDest(): #check if at location
-            cDest = nDest
-            nDest = 0  #if next location = 0, the pod can recieve a new "next destination"
-            getDest()
-        elif cLoca != Loca:
-            yields = 0 
+    cTime = Time
+    cStat = Stat
+    cTick = Tick
+    if cLoca != Loca:
+        cLoca = Loca
+        yields = 0
+        
+    #rpc(PORTAL_ADDR,'printLocals',Time,Loca,Stat,Tick)
 
 #-----FUNCTIONS FOR DEBUGGING AND TESTING
 def putChar(char):  #status: Done, tested
@@ -283,27 +205,7 @@ def test():
     b = 'A'
     a = "Hello"
     
-    print a,' ',b,' ',c,' ',d
-# def parseLocal(input): # Status: Done, not tested
-#     n = len(input)
-#     param = 0
-#     i = 0
-#     j = 0
-#     while(i < n):
-#         c = input[i]
-#         i += 1
-#         if c == ',':
-#             if param ==0:
-#                 cTime = input[j:i-1]
-#             elif param ==1:
-#                 cLoca = input[j:i-1]
-#             elif param ==2:
-#                 cStat = input[j:i-1]
-#             elif param ==3:
-#                 cSped = input[j:i-1]
-#             j=i
-#             param +=1
-#     setLocals(cTime, cLoca,cStat, cSped)      
+    print a,' ',b,' ',c,' ',d     
 def printStatus():#sends the stats of the pod to the master.
     """ sends a update to the master: 
         -if ready and no destination the master will provide a 
@@ -311,7 +213,8 @@ def printStatus():#sends the stats of the pod to the master.
         -The master can react to the pod based off what it recieves
         """
     rpc(PORTAL_ADDR,'podStatus',cTime,cStat,cLoca,cSped,cTick,cDest)
-    
+def podStatus():
+    pass    
 def readyForNextDest():
     """ checks if the pod is ready to recieve a new destination"""
     if cLoca == cDest & cStat == dropoff:
@@ -325,3 +228,14 @@ def readyForNewRoute():
         return 1
     else:
         return 0 
+def printLocals():
+    pass;
+def newDest():
+    global cDest, cStat
+    if cDest == 1:
+        cDest = 8
+    elif cDest == 8:
+        cDest = 5
+    elif cDest == 5:
+        cDest = 1
+    getDest()

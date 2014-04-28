@@ -201,6 +201,7 @@ void SWmode() {
 
 void tickFunction() {
     xSemaphoreGive(ticks_sem);
+//    vTaskDelay(100);
 }
 
 #endif /* SMARTLINEFOLLOWER_HPP_ */

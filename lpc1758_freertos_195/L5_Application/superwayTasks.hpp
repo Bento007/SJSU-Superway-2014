@@ -382,7 +382,7 @@ void StateMachine(void *p){
                     if(xQueueSend(directionQ, &dir_ary[k].dir, portMAX_DELAY))
                         k++;
                     wireless.update_SNAP(dir_ary[k].loc.name.source
-                            ,dir_ary[k].loc.status,dir_ary[k].loc.ticks,
+                            ,current,dir_ary[k].loc.ticks,
                             dir_ary[k].loc.type);//update SNAP object.
                 }
                 else

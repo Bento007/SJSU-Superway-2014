@@ -6,7 +6,7 @@
 
 int main()
 {
-    //create the Queues in tasks...
+    //create the Queues in tasks...//
     SMtoPath = xQueueCreate(1, sizeof(path_t));
     directionQ = xQueueCreate(1, sizeof(int));
     newDestinationQ = xQueueCreate(1, sizeof(uint32_t));

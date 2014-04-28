@@ -24,12 +24,7 @@ def podStatus(time,status,location,speed,ticks, destination):
     #print remoteNode.getFormattedNetAddr()
     #remoteNode.getFormattedNetworkId()
     str0 = remoteNode.name + "="
-    str1 ="Time:", time,"Status:",status,"Location: ", location,"Speed:", speed,"Ticks:", ticks,"Destination:", destination
-    if destination == 0 & status == ready:#TODO when is destination zero other than startup
-        #TODO: find a new destination for the pod
-        pickup = 8
-        dropoff = 1
-        rpc(remoteAddr,'setRoute',pickup, dropoff)
+    str1 ="Time:", str(time),"Status:",str(status),"Location: ", str(location),"Speed:", str(speed),"Ticks:", str(ticks),"Destination:", str(destination)
     
     #logData(
     print str0,str1 #TODO: log this
