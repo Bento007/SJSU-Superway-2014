@@ -233,9 +233,9 @@ def printLocals():
 def newDest():
     global cDest, cStat
     if cDest == 1:
-        cDest = 8
-    elif cDest == 8:
         cDest = 5
-    elif cDest == 5:
+    elif cDest == 8:
         cDest = 1
+    elif cDest == 5:
+        cDest = 8
     getDest()

@@ -23,11 +23,16 @@ def registerRPC(location):
 def podStatus(time,status,location,speed,ticks, destination):
     #print remoteNode.getFormattedNetAddr()
     #remoteNode.getFormattedNetworkId()
-    str0 = remoteNode.name + "="
-    str1 ="Time:", str(time),"Status:",str(status),"Location: ", str(location),"Speed:", str(speed),"Ticks:", str(ticks),"Destination:", str(destination)
+    str0 = remoteNode.name + "= "
+    str0 = str0 + "Time: "+str(time)
+    str0 = str0 +", Status: " + str(status)
+    str0 = str0 +", Location: "+ str(location)
+    str0 = str0 +", Speed:"+ str(speed)
+    str0 = str0 +", Ticks:"+ str(ticks)
+    str0 = str0 +", Destination:", str(destination)
     
     #logData(
-    print str0,str1 #TODO: log this
+    print str0 #TODO: log this
     
 def setRoute():
     pass
